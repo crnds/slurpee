@@ -4,12 +4,14 @@ Static file server for the Slurpee map, with HTTP Range support.
 
 Why this exists instead of `python3 -m http.server`:
 
-    data/thailand.pmtiles is a ~470 MB PMTiles archive. The browser never
+    data/basemap.pmtiles is a ~77 MB PMTiles archive. The browser never
     downloads it whole — protomaps-leaflet reads the header, walks the tile
     directory, and pulls individual map tiles with `Range: bytes=a-b`
     requests. Python's stdlib SimpleHTTPRequestHandler ignores Range
     entirely and answers 200 with the full body, so every tile fetch would
-    try to stream 470 MB. The map never renders.
+    try to stream the whole archive. The map never renders.
+
+    GitHub Pages honours Range, so the deployed site needs no equivalent.
 
     This subclass answers those requests with 206 Partial Content.
 
@@ -133,9 +135,10 @@ def main():
 
     server = http.server.ThreadingHTTPServer(("", port), RangeHandler)
     print("Slurpee map  →  http://localhost:%d  (Ctrl-C to stop)" % port)
-    if not os.path.exists("data/thailand.pmtiles"):
-        print("note: data/thailand.pmtiles missing — the map will fall back "
-              "to OpenStreetMap raster tiles.")
+    if not os.path.exists("data/basemap.pmtiles"):
+        print("note: data/basemap.pmtiles missing — the map will render "
+              "without a background. Rebuild it with the pmtiles commands "
+              "documented at the top of app.js.")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

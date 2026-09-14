@@ -1,17 +1,21 @@
 /* ══════════════════════════════════════════════════════════════════════════
    hero.js — the one three.js flourish (DESIGN.md §6 "perpetual micro-life")
    A low-poly translucent cup with a slowly swirling slush of Flavor Swirl
-   particles. Decorative only: it loads last, never blocks first paint, and
-   bows out entirely for reduced-motion or missing WebGL, leaving the static
-   #icon-cup sprite in place.
+   particles. Decorative only: index.html lazy-loads three.js and this file
+   after window load at idle, then calls window.SLURPEE_HERO(). It never
+   blocks first paint, and bows out entirely for reduced-motion or missing
+   WebGL, leaving the static #icon-cup sprite in place.
    ══════════════════════════════════════════════════════════════════════════ */
 
 (function () {
   'use strict';
 
-  var MAX_DPR = 2;
+  // Phones get a lighter scene: lower pixel ratio and fewer slush particles.
+  var MOBILE = window.matchMedia &&
+    window.matchMedia('(max-width: 768px)').matches;
+  var MAX_DPR = MOBILE ? 1.5 : 2;
   var COLORS = [0x3E2C23, 0x3D8BFD, 0x5FBF4A, 0xF2768F, 0xF5A623];  // cola/raspberry/apple/strawberry/mango
-  var PARTICLES = 260;
+  var PARTICLES = MOBILE ? 140 : 260;
 
   function reducedMotion() {
     return window.matchMedia &&
@@ -198,9 +202,6 @@
     start();
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  // index.html loads this file lazily and calls the boot function.
+  window.SLURPEE_HERO = init;
 })();

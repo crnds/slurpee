@@ -1,6 +1,8 @@
 # Rebuildable data, deliberately not committed.
-# thailand.pmtiles: 448 MB OpenStreetMap basemap extract — rebuild with the
-#   pmtiles command documented at the top of app.js.
+# thailand.pmtiles: 469 MB full-detail (z14) OpenStreetMap basemap extract. It
+#   is only the local source for data/basemap.pmtiles — the trimmed z12 archive
+#   that IS committed, because GitHub Pages has to serve it and GitHub caps
+#   files at 100 MB. Rebuild both with the pmtiles commands at the top of app.js.
 # _cache.json: raw store-API responses, only used to make fetch_stores.py resumable.
 data/thailand.pmtiles
 data/_cache.json

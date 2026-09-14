@@ -15,8 +15,6 @@
 <link rel="stylesheet" href="assets/fonts.css">
 
 <link rel="stylesheet" href="vendor/leaflet.css">
-<link rel="stylesheet" href="vendor/MarkerCluster.css">
-<link rel="stylesheet" href="vendor/MarkerCluster.Default.css">
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -247,9 +245,10 @@
         </p>
         <p class="notice notice--info" id="basemap-notice" hidden>
           <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
-          <span>Map background and fonts need the local server. Run
-            <code>python3 serve.py</code> in the slurpee folder and open
-            <code>localhost:8080</code>. Branches and search work either way.</span>
+          <span>The map background is served in byte ranges, which this page
+            was not opened over. Run <code>python3 serve.py</code> in the slurpee
+            folder and open <code>localhost:8080</code>, or use the deployed
+            site. Branches and search work either way.</span>
         </p>
       </div>
 
@@ -289,11 +288,37 @@
 </div>
 
 <script src="vendor/leaflet.js"></script>
-<script src="vendor/leaflet.markercluster.js"></script>
 <script src="vendor/protomaps-leaflet.js"></script>
 <script src="data/stores.js"></script>
 <script src="app.js"></script>
-<script src="vendor/three.min.js" defer></script>
-<script src="hero.js" defer></script>
+<script>
+/* The three.js hero is decorative. The 670 KB library and the WebGL context
+   stay off the critical path: they load after window load, at idle, and only
+   when motion is welcome. Without them the #icon-cup sprite stays, which is
+   the designed fallback. */
+(function () {
+  function load(src) {
+    return new Promise(function (resolve, reject) {
+      var s = document.createElement('script');
+      s.src = src;
+      s.onload = resolve;
+      s.onerror = reject;
+      document.body.appendChild(s);
+    });
+  }
+  function go() {
+    if (window.matchMedia &&
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    load('vendor/three.min.js')
+      .then(function () { return load('hero.js'); })
+      .then(function () { if (window.SLURPEE_HERO) window.SLURPEE_HERO(); })
+      .catch(function () { /* sprite fallback stays */ });
+  }
+  window.addEventListener('load', function () {
+    if (window.requestIdleCallback) window.requestIdleCallback(go);
+    else setTimeout(go, 1500);
+  });
+})();
+</script>
 </body>
 </html>

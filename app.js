@@ -11,7 +11,10 @@
 
   var THAILAND = [[5.6, 97.3], [20.5, 105.7]];
   var LIST_LIMIT = 150;        // rows rendered at once; the map shows them all
+  var LIST_FIRST = 40;         // rows painted immediately; the rest land on idle
   var SEARCH_DEBOUNCE = 150;
+  var CULL_DEBOUNCE = 120;     // re-cull offscreen pins this long after a pan
+  var PIN_MIN_ZOOM = 11;       // below this, branches draw as canvas dots
   var STORAGE = {
     province: 'slurpee_v1_province',
     confirmed: 'slurpee_v1_confirmedonly',
@@ -23,10 +26,10 @@
   /* Both basemaps are the same Thailand extract of the Protomaps OpenStreetMap
      basemap, served from this project's own data/ directory and drawn in two
      different flavours. No API key, no rate limit, no third party in the
-     request path at all. It is a single ~450 MB PMTiles archive read with HTTP
-     range requests, which means it needs serve.py (python3 -m http.server
-     ignores Range) and cannot work over file:// — probeBasemap() detects both
-     and shows an explanatory notice instead of a broken map.
+     request path at all. It is a PMTiles archive read with HTTP range
+     requests, so it needs a server that honours Range: serve.py does,
+     `python3 -m http.server` does not, and file:// cannot. GitHub Pages does,
+     which is what lets the deployed site use the same file.
 
      Every hosted alternative was tried and rejected: Stadia 401s without a paid
      key, CARTO returns "API KEY REQUIRED" watermark tiles, and OpenStreetMap's
@@ -34,13 +37,25 @@
      the tile usage policy" 403s to a browser it cannot identify. Hosting the
      data ourselves is the only arrangement nobody can switch off.
 
-     Rebuild the archive (it is gitignored) with:
+     data/basemap.pmtiles is committed so GitHub Pages can serve it, which caps
+     it at GitHub's 100 MB per-file limit. That is what fixes maxzoom at 12: the
+     same extract measures 168 MB at z13 and 469 MB at z14. Trading z13-14 away
+     costs buildings, POIs and minor streets — a branch viewed at z16 sits on an
+     overzoomed basemap — and it is the price of keeping the map in the repo.
+
+     Rebuild with a recent Protomaps planet build (they keep about two weeks):
        brew install pmtiles
        pmtiles extract https://build.protomaps.com/YYYYMMDD.pmtiles \
          data/thailand.pmtiles --bbox=97.2,5.5,105.8,20.6 --maxzoom=14
-     Protomaps keeps planet builds for about two weeks, so pick a recent date. */
-  var PMTILES_URL = 'data/thailand.pmtiles';
-  var PMTILES_MAXZOOM = 14;    // extract's native zoom; overzoomed past this
+       pmtiles extract data/thailand.pmtiles data/basemap.pmtiles \
+         --region=tha.geojson --maxzoom=12
+     The first archive is the gitignored full-detail source; only the second is
+     committed. tha.geojson is Thailand's ADM0 boundary as a bare MultiPolygon
+     (geoBoundaries gbOpen THA ADM0, unwrapped from its FeatureCollection) —
+     clipping to the border rather than the bbox is worth roughly a third of the
+     bytes. Check the size with --dry-run before running the extract for real. */
+  var PMTILES_URL = 'data/basemap.pmtiles';
+  var PMTILES_MAXZOOM = 12;    // extract's native zoom; overzoomed past this
 
   var TILE_ATTR = OSM_ATTR + ' &middot; tiles <a href="https://protomaps.com">Protomaps</a>';
 
@@ -69,13 +84,16 @@
     confirmedOnly: false,
     userPos: null,
     map: null,
-    cluster: null,
-    markers: {},        // code -> L.Marker
+    pins: null,
+    markers: {},        // code -> L.Marker (divIcon pins, zoom >= PIN_MIN_ZOOM)
+    dots: {},           // code -> L.CircleMarker (canvas, zoom < PIN_MIN_ZOOM)
+    dotRenderer: null,  // shared L.canvas renderer for the dots
     selected: null,
     layer: 'frost',
     basemapMissing: false,
     tileLayer: null,
-    meMarker: null
+    meMarker: null,
+    listRender: 0       // token: latest renderList pass owns the list DOM
   };
 
   var el = {};
@@ -119,6 +137,13 @@
       clearTimeout(t);
       t = setTimeout(function () { fn.apply(self, args); }, ms);
     };
+  }
+
+  /* requestIdleCallback with a Safari-safe fallback, for work that should not
+     fight first paint or an in-flight gesture. */
+  function idle(fn) {
+    if (window.requestIdleCallback) return window.requestIdleCallback(fn);
+    return setTimeout(fn, 30);
   }
 
   function svgIcon(name, cls) {
@@ -178,9 +203,10 @@
   // ── MAP ─────────────────────────────────────────────────────────────────
 
   /* Ask the server for the first 16 bytes of the archive. A 206 with the
-     PMTiles magic means the local basemap is usable; anything else (file://,
-     plain http.server answering 200 with the whole file, archive not built
-     yet) means fall back to raster OSM before the user sees a blank map. */
+     PMTiles magic means the basemap is usable; anything else (file://, plain
+     http.server answering 200 with the whole file, archive not built yet)
+     means there is no basemap to draw, so say so rather than leaving the user
+     staring at bare pins on an empty page. */
   function probeBasemap() {
     if (typeof protomapsL === 'undefined' || !window.fetch ||
         location.protocol === 'file:') {
@@ -215,11 +241,20 @@
 
     // protomaps-leaflet v5 calls this option "flavor", not "theme" — an
     // unrecognised key is ignored silently and paints an empty canvas.
+    // The rest are L.GridLayer options (the layer extends it): deferring tile
+    // updates until the gesture ends and shrinking the offscreen tile buffer
+    // is the difference between a slideshow and a smooth pan on a phone.
+    // devicePixelRatio sizes the tile canvas (256 × dpr), so a DPR-3 phone
+    // would otherwise paint 768px tiles; 2 is plenty for a map under pins.
     STATE.tileLayer = protomapsL.leafletLayer({
       url: PMTILES_URL,
       flavor: TILES[which].flavor,
       lang: 'th',                       // match the Thai store list
       maxDataZoom: PMTILES_MAXZOOM,
+      updateWhenIdle: true,
+      updateWhenZooming: false,
+      keepBuffer: 1,
+      devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
       attribution: TILE_ATTR
     });
 
@@ -252,7 +287,7 @@
     var m = L.marker([s.lat, s.lng], {
       icon: L.divIcon({
         className: 'pin-icon',
-        html: pinHtml(s, false),
+        html: pinHtml(s, STATE.selected === s),
         iconSize: [30, 30],
         iconAnchor: [15, 15]
       }),
@@ -275,16 +310,53 @@
     }));
   }
 
+  /* At country zoom, thousands of branches overlap into an unreadable mass
+     anyway — and 2,600 divIcon DOM nodes are what made phones crawl. So two
+     regimes, both still one marker per branch (never a count bubble):
+
+       zoom <  PIN_MIN_ZOOM: L.circleMarker dots on a single shared canvas —
+                             one <canvas> for the whole country.
+       zoom >= PIN_MIN_ZOOM: the full divIcon pins, but only for branches in
+                             (or near) the viewport; re-culled on moveend.
+
+     Markers and dots are built lazily and cached in STATE.markers/STATE.dots,
+     so panning or zooming back costs nothing. Colours mirror .pin in
+     style.css (Slurpee Red border, Cup White fill, Melted Gray when
+     unconfirmed). */
+  function makeDot(s) {
+    if (!STATE.dotRenderer) STATE.dotRenderer = L.canvas({ padding: 0.4 });
+    var d = L.circleMarker([s.lat, s.lng], {
+      renderer: STATE.dotRenderer,
+      radius: 5,
+      color: s.sp ? '#E8402A' : '#5C6B7A',
+      weight: 2,
+      fillColor: '#FFFFFF',
+      fillOpacity: 1,
+      title: s.name,
+      alt: s.name + ' — ' + s.province
+    });
+    d.on('click', function () { select(s, false); });
+    return d;
+  }
+
   function renderMarkers() {
-    STATE.cluster.clearLayers();
-    var batch = [];
+    if (!STATE.map) return;
+    STATE.pins.clearLayers();
+    var bounds = STATE.map.getBounds().pad(0.15);
+    var dotsOnly = STATE.map.getZoom() < PIN_MIN_ZOOM;
     for (var i = 0; i < STATE.filtered.length; i++) {
       var s = STATE.filtered[i];
-      var m = STATE.markers[s.code];
-      if (!m) { m = makeMarker(s); STATE.markers[s.code] = m; }
-      batch.push(m);
+      if (!bounds.contains([s.lat, s.lng])) continue;
+      if (dotsOnly) {
+        var d = STATE.dots[s.code];
+        if (!d) { d = makeDot(s); STATE.dots[s.code] = d; }
+        STATE.pins.addLayer(d);
+      } else {
+        var m = STATE.markers[s.code];
+        if (!m) { m = makeMarker(s); STATE.markers[s.code] = m; }
+        STATE.pins.addLayer(m);
+      }
     }
-    STATE.cluster.addLayers(batch);
   }
 
   // ── LIST ────────────────────────────────────────────────────────────────
@@ -333,6 +405,7 @@
 
   function renderList() {
     var list = STATE.filtered;
+    STATE.listRender++;
     if (!list.length) {
       el.results.innerHTML = emptyHtml();
       var reset = document.getElementById('reset-btn');
@@ -340,12 +413,26 @@
       return;
     }
     var shown = list.slice(0, LIST_LIMIT);
-    var html = shown.map(rowHtml).join('');
+    var tail = '';
     if (list.length > LIST_LIMIT) {
-      html += '<p class="list-end">Showing ' + fmtCount(LIST_LIMIT) + ' of ' +
+      tail = '<p class="list-end">Showing ' + fmtCount(LIST_LIMIT) + ' of ' +
         fmtCount(list.length) + ' &mdash; zoom the map or narrow your search.</p>';
     }
-    el.results.innerHTML = html;
+
+    // First screenful synchronously, the rest on idle — one innerHTML with
+    // 150 rows is a long task on a phone.
+    var first = shown.slice(0, LIST_FIRST);
+    var rest = shown.slice(LIST_FIRST);
+    el.results.innerHTML = first.map(rowHtml).join('');
+
+    if (rest.length || tail) {
+      var token = STATE.listRender;
+      idle(function () {
+        if (token !== STATE.listRender) return;   // a newer filter pass owns the list
+        el.results.insertAdjacentHTML('beforeend',
+          rest.map(function (s, i) { return rowHtml(s, i + LIST_FIRST); }).join('') + tail);
+      });
+    }
   }
 
   // ── SELECTION / DETAIL ──────────────────────────────────────────────────
@@ -401,6 +488,12 @@
   function select(s, fromList) {
     if (STATE.selected) refreshMarkerIcon(STATE.selected, false);
     STATE.selected = s;
+
+    // The pin may be culled (offscreen) when the pick came from the list —
+    // make sure it exists and is on the map before styling it active.
+    var m = STATE.markers[s.code];
+    if (!m) { m = makeMarker(s); STATE.markers[s.code] = m; }
+    if (!STATE.pins.hasLayer(m)) STATE.pins.addLayer(m);
     refreshMarkerIcon(s, true);
 
     el.detailScroll.innerHTML = detailHtml(s);
@@ -412,13 +505,10 @@
     });
 
     if (fromList) {
-      // zoomToShowLayer alone only pans: at country zoom every marker is
-      // already on screen, so it decides no zoom is needed and the branch
-      // stays a speck. Fly in far enough to actually read the street.
+      // The pin is always on the map now, so just fly to it — but never zoom
+      // back out, and go in far enough to actually read the street.
       var target = Math.max(STATE.map.getZoom(), 16);
-      STATE.cluster.zoomToShowLayer(STATE.markers[s.code], function () {
-        STATE.map.setView([s.lat, s.lng], target, { animate: true });
-      });
+      STATE.map.setView([s.lat, s.lng], target, { animate: true });
     }
     if (window.matchMedia('(max-width: 768px)').matches) setSnap('half');
   }
@@ -701,11 +791,16 @@
       return;
     }
 
-    STATE.all = unpack(raw);
+    // The saved layer is read before the basemap probe resolves — the probe
+    // can beat the deferred boot below on a fast local server.
+    try {
+      var lay = localStorage.getItem(STORAGE.layer);
+      if (lay === 'frost' || lay === 'full') STATE.layer = lay;
+    } catch (e) { /* private mode */ }
 
     // maxZoom must live on the map, not the layer: the vector basemap is an
-    // L.GridLayer that declares no maxZoom, and markercluster throws
-    // "Map has no maxZoom specified" without one.
+    // L.GridLayer that declares no maxZoom, so without this the map would
+    // inherit no upper bound and refuse to zoom past the basemap's data.
     STATE.map = L.map(el.map, {
       zoomControl: false,
       attributionControl: true,
@@ -714,44 +809,38 @@
       maxZoom: 19
     }).fitBounds(THAILAND, { padding: [20, 20] });
 
-    buildProvinceSelect();
-    restore();
-
-    // The local basemap needs serve.py and cannot work over file://.
-    // Probe before choosing a layer so raster never flashes first.
+    // The basemap needs a Range-capable server and cannot work over file://.
+    // Probe before choosing a layer so the notice never flashes first.
     probeBasemap().then(function (ok) {
       STATE.basemapMissing = !ok;
       setTiles(STATE.layer);
     });
 
-    STATE.cluster = L.markerClusterGroup({
-      chunkedLoading: true,
-      disableClusteringAtZoom: 15,
-      spiderfyOnMaxZoom: false,
-      showCoverageOnHover: false,
-      maxClusterRadius: 64,
-      iconCreateFunction: function (c) {
-        var n = c.getChildCount();
-        var size = n < 10 ? 34 : n < 100 ? 42 : n < 1000 ? 50 : 58;
-        return L.divIcon({
-          className: 'cluster-icon',
-          html: '<div class="cluster' + (n > 99 ? ' cluster--lg' : '') + '">' +
-            (n > 999 ? Math.round(n / 100) / 10 + 'k' : n) + '</div>',
-          iconSize: [size, size]
-        });
-      }
+    STATE.pins = L.layerGroup();
+    STATE.map.addLayer(STATE.pins);
+    STATE.map.on('moveend', debounce(renderMarkers, CULL_DEBOUNCE));
+
+    // Stage 2: let the shell and loader paint first, then do the heavy data
+    // pass. Unpacking 2,600 branches and building the first screen in one
+    // synchronous block was the boot long-task on phones.
+    requestAnimationFrame(function () {
+      setTimeout(function () {
+        STATE.all = unpack(raw);
+
+        buildProvinceSelect();
+        restore();
+
+        bind();
+        initSheet();
+        applyFilters();
+
+        el.loader.classList.add('is-out');
+        setTimeout(function () { el.loader.hidden = true; }, 400);
+
+        // hero.js reads this to know the data is up
+        document.dispatchEvent(new CustomEvent('slurpee:ready'));
+      }, 0);
     });
-    STATE.map.addLayer(STATE.cluster);
-
-    bind();
-    initSheet();
-    applyFilters();
-
-    el.loader.classList.add('is-out');
-    setTimeout(function () { el.loader.hidden = true; }, 400);
-
-    // hero.js reads this to know the data is up
-    document.dispatchEvent(new CustomEvent('slurpee:ready'));
   }
 
   if (document.readyState === 'loading') {

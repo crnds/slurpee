@@ -479,9 +479,6 @@
       '<a class="btn btn-primary" target="_blank" rel="noopener" ' +
       'href="https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng + '">' +
       svgIcon('directions') + 'Directions</a>' +
-      '<a class="btn btn-secondary" target="_blank" rel="noopener" ' +
-      'href="https://www.openstreetmap.org/?mlat=' + s.lat + '&mlon=' + s.lng + '#map=18/' + s.lat + '/' + s.lng + '">' +
-      svgIcon('external') + 'OSM</a>' +
       '</div>';
   }
 

@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Slurpee Map Thailand — every 7-Eleven serving Slurpee</title>
+<meta name="description" content="An interactive OpenStreetMap of every 7-Eleven branch in Thailand that serves Slurpee.">
+<meta name="theme-color" content="#F4F8FB">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23E8402A%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpath%20d%3D%22M7%209%20C7%205.5%209.5%204%2012%204%20C14.5%204%2017%205.5%2017%209%22/%3E%3Cpath%20d%3D%22M7%209%20L8.6%2020%20H15.4%20L17%209%22/%3E%3Cpath%20d%3D%22M13.5%206.5%20L15.5%202.5%22/%3E%3C/svg%3E">
+
+<!-- Self-hosted type (assets/fonts/). Nothing here touches the network.
+     No rel=preload: fonts are a same-origin local read when the page is served,
+     and over file:// Chrome treats every font as cross-origin and refuses it,
+     so preloading only adds console noise on the one path where it cannot work. -->
+<link rel="stylesheet" href="assets/fonts.css">
+
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.css">
+<link rel="stylesheet" href="vendor/MarkerCluster.Default.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── ICON SPRITE ─────────────────────────────────────────────────────────
+     Inlined from assets/sprite.svg (that file stays the canonical source).
+     Inlined rather than referenced so <use> resolves under file:// too.
+     If you edit assets/sprite.svg, re-inline it here.
+────────────────────────────────────────────────────────────────────────── -->
+<svg xmlns="http://www.w3.org/2000/svg" class="sprite" aria-hidden="true" focusable="false">
+  <!--
+    Slurpee Map Thailand — Icon Sprite
+    Spec per DESIGN.md: 24x24 grid, 2px stroke, round caps/joins, chunky + rounded
+    like the brand. All strokes use currentColor — theme via CSS `color`.
+
+    Usage:
+      <svg class="icon" width="24" height="24" aria-hidden="true">
+        <use href="assets/sprite.svg#icon-straw"></use>
+      </svg>
+
+    Suggested CSS:
+      .icon { width: 24px; height: 24px; color: #1B2733; flex: none; }
+      .icon.accent { color: #E8402A; }   /* Slurpee Red — use sparingly */
+  -->
+
+  <!-- Brand -->
+  <symbol id="icon-straw" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 21 L13.5 9 L16 4.5 L19 3"/>
+  </symbol>
+
+  <symbol id="icon-cup" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 9 C7 5.5 9.5 4 12 4 C14.5 4 17 5.5 17 9"/>
+    <path d="M7 9 L8.6 20 H15.4 L17 9"/>
+    <path d="M13.5 6.5 L15.5 2.5"/>
+  </symbol>
+
+  <symbol id="icon-swirl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8.5 12.5 L12 20 L15.5 12.5"/>
+    <path d="M7 12 C6 9.5 8.5 8 12 8 C15.5 8 18 9.5 17 12"/>
+    <path d="M12 8 C12 6 13 4.5 14.5 4"/>
+  </symbol>
+
+  <symbol id="icon-machine" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="6" y="3" width="12" height="7" rx="1.5"/>
+    <path d="M12 10 V13"/>
+    <path d="M8.5 17 H15.5 L14.5 21 H9.5 Z"/>
+  </symbol>
+
+  <symbol id="icon-snowflake" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 V21"/>
+    <path d="M4.2 7.5 L19.8 16.5"/>
+    <path d="M19.8 7.5 L4.2 16.5"/>
+    <path d="M12 3 L10 5 M12 3 L14 5"/>
+    <path d="M12 21 L10 19 M12 21 L14 19"/>
+  </symbol>
+
+  <!-- Map -->
+  <symbol id="icon-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 21 C12 21 5 14.6 5 9.5 A7 7 0 1 1 19 9.5 C19 14.6 12 21 12 21 Z"/>
+    <circle cx="12" cy="9.5" r="2.5"/>
+  </symbol>
+
+  <symbol id="icon-locate" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="6"/>
+    <path d="M12 2 V5 M12 19 V22 M2 12 H5 M19 12 H22"/>
+  </symbol>
+
+  <symbol id="icon-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 L21 8 L12 13 L3 8 Z"/>
+    <path d="M3.5 12.5 L12 17 L20.5 12.5"/>
+    <path d="M3.5 16.5 L12 21 L20.5 16.5"/>
+  </symbol>
+
+  <symbol id="icon-directions" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 3 L10.5 13.5"/>
+    <path d="M21 3 L14 21 L10.5 13.5 L3 10 Z"/>
+  </symbol>
+
+  <symbol id="icon-store" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 9 L5.5 4 H18.5 L20 9"/>
+    <path d="M4 9 A2.3 2.3 0 0 0 8.6 9 A2.3 2.3 0 0 0 13.2 9 A2.3 2.3 0 0 0 17.8 9 A2.3 2.3 0 0 0 20 9"/>
+    <path d="M5.5 11.5 V20 H18.5 V11.5"/>
+    <path d="M10 20 V15 H14 V20"/>
+  </symbol>
+
+  <!-- Interface -->
+  <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="11" cy="11" r="7"/>
+    <path d="M16.2 16.2 L21 21"/>
+  </symbol>
+
+  <symbol id="icon-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 5 H20 L14 12 V17.5 L10 19.5 V12 Z"/>
+  </symbol>
+
+  <symbol id="icon-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M6 6 L18 18 M18 6 L6 18"/>
+  </symbol>
+
+  <symbol id="icon-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 7 H20 M4 12 H20 M4 17 H20"/>
+  </symbol>
+
+  <symbol id="icon-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 5 V19 M5 12 H19"/>
+  </symbol>
+
+  <symbol id="icon-minus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12 H19"/>
+  </symbol>
+
+  <symbol id="icon-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 10 L12 15 L17 10"/>
+  </symbol>
+
+  <symbol id="icon-chevron-up" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 14 L12 9 L17 14"/>
+  </symbol>
+
+  <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 7 L9 12 L14 17"/>
+  </symbol>
+
+  <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10 7 L15 12 L10 17"/>
+  </symbol>
+
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 12 H19 M13 6 L19 12 L13 18"/>
+  </symbol>
+
+  <symbol id="icon-external" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 4 H20 V10"/>
+    <path d="M20 4 L11 13"/>
+    <path d="M20 14 V18 A2 2 0 0 1 18 20 H6 A2 2 0 0 1 4 18 V6 A2 2 0 0 1 6 4 H10"/>
+  </symbol>
+
+  <symbol id="icon-share" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="17" cy="5" r="2.5"/>
+    <circle cx="6" cy="12" r="2.5"/>
+    <circle cx="17" cy="19" r="2.5"/>
+    <path d="M8.2 10.8 L14.8 6.4 M8.2 13.2 L14.8 17.6"/>
+  </symbol>
+
+  <!-- Status & meta -->
+  <symbol id="icon-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="8.5"/>
+    <path d="M12 7 V12 L15.5 14"/>
+  </symbol>
+
+  <symbol id="icon-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 L14.9 8.6 L21 9.5 L16.5 13.9 L17.6 20 L12 17 L6.4 20 L7.5 13.9 L3 9.5 L9.1 8.6 Z"/>
+  </symbol>
+
+  <symbol id="icon-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M5 12.5 L10 17.5 L19 7"/>
+  </symbol>
+
+  <symbol id="icon-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3.5 L21.5 20 H2.5 Z"/>
+    <path d="M12 10 V14"/>
+    <path d="M12 17.2 L12 17.21"/>
+  </symbol>
+
+  <symbol id="icon-phone" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M22 16.92 V19.92 A2 2 0 0 1 19.82 21.92 A19.79 19.79 0 0 1 11.19 18.85 A19.5 19.5 0 0 1 5.19 12.85 A19.79 19.79 0 0 1 2.08 4.18 A2 2 0 0 1 4.06 2 H7.06 A2 2 0 0 1 9.06 3.72 C9.19 4.68 9.42 5.62 9.76 6.53 A2 2 0 0 1 9.31 8.64 L8.09 9.91 A16 16 0 0 0 14.09 15.91 L15.36 14.69 A2 2 0 0 1 17.47 14.24 C18.38 14.58 19.32 14.81 20.28 14.94 A2 2 0 0 1 22 16.92 Z"/>
+  </symbol>
+
+  <symbol id="icon-drop" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M12 3 C12 3 6 10 6 14 A6 6 0 0 0 18 14 C18 10 12 3 12 3 Z"/>
+  </symbol>
+</svg>
+
+<div class="app">
+
+  <div id="map" role="application" aria-label="Map of Slurpee branches in Thailand"></div>
+
+  <!-- ── SEARCH ───────────────────────────────────────────────────────── -->
+  <div class="top-bar">
+    <search class="search">
+      <svg class="icon search-icon" aria-hidden="true"><use href="#icon-straw"></use></svg>
+      <input id="search-input" type="search" autocomplete="off" spellcheck="false"
+             placeholder="Where&rsquo;s your nearest Slurpee?" aria-label="Search by branch name, code or address">
+      <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">
+        <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+      </button>
+    </search>
+  </div>
+
+  <!-- ── SIDEBAR / BOTTOM SHEET ───────────────────────────────────────── -->
+  <aside class="sidebar" id="sidebar" data-snap="half">
+    <button type="button" class="grab" id="grab" aria-label="Expand or collapse the panel"><span></span></button>
+
+    <div class="sidebar-scroll" id="sidebar-scroll">
+      <header class="sidebar-head">
+        <div class="hero" id="hero">
+          <canvas id="hero-canvas" aria-hidden="true"></canvas>
+          <svg class="icon hero-fallback" aria-hidden="true"><use href="#icon-cup"></use></svg>
+        </div>
+        <div class="sidebar-headings">
+          <h1>Slurpee Map<em>Thailand</em></h1>
+          <p class="tally"><b id="count">&mdash;</b> <span id="count-label">branches</span></p>
+        </div>
+      </header>
+
+      <div class="filters">
+        <div class="field">
+          <label class="field-label" for="province">Province</label>
+          <div class="select-wrap">
+            <select id="province"><option value="">All of Thailand</option></select>
+            <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+          </div>
+        </div>
+
+        <label class="toggle">
+          <input type="checkbox" id="confirmed-only">
+          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+          <span class="toggle-text">Confirmed machines only</span>
+        </label>
+
+        <button type="button" class="btn btn-primary" id="locate-btn">
+          <svg class="icon" aria-hidden="true"><use href="#icon-locate"></use></svg>
+          <span id="locate-label">Find my freeze</span>
+        </button>
+        <p class="notice" id="geo-error" hidden role="alert">
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+          <span></span>
+        </p>
+        <p class="notice notice--info" id="basemap-notice" hidden>
+          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+          <span>Map background and fonts need the local server. Run
+            <code>python3 serve.py</code> in the slurpee folder and open
+            <code>localhost:8080</code>. Branches and search work either way.</span>
+        </p>
+      </div>
+
+      <div class="results" id="results"></div>
+    </div>
+
+    <!-- ── STORE DETAIL (slides over the list) ────────────────────────── -->
+    <section class="detail" id="detail" hidden aria-live="polite">
+      <div class="detail-scroll" id="detail-scroll"></div>
+    </section>
+  </aside>
+
+  <!-- ── MAP CONTROLS ─────────────────────────────────────────────────── -->
+  <div class="map-controls">
+    <button type="button" class="ctl" id="zoom-in" aria-label="Zoom in">
+      <svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
+    </button>
+    <button type="button" class="ctl" id="zoom-out" aria-label="Zoom out">
+      <svg class="icon" aria-hidden="true"><use href="#icon-minus"></use></svg>
+    </button>
+    <button type="button" class="ctl" id="layer-btn" aria-label="Switch map style" aria-pressed="false">
+      <svg class="icon" aria-hidden="true"><use href="#icon-layers"></use></svg>
+    </button>
+  </div>
+
+  <!-- ── LOADING ──────────────────────────────────────────────────────── -->
+  <div class="loader" id="loader">
+    <div class="loader-card">
+      <svg class="icon loader-cup" aria-hidden="true"><use href="#icon-cup"></use></svg>
+      <p class="loader-copy">Pouring the map&hellip;</p>
+      <div class="shimmer-rows">
+        <span class="shimmer"></span><span class="shimmer"></span><span class="shimmer"></span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script src="vendor/leaflet.js"></script>
+<script src="vendor/leaflet.markercluster.js"></script>
+<script src="vendor/protomaps-leaflet.js"></script>
+<script src="data/stores.js"></script>
+<script src="app.js"></script>
+<script src="vendor/three.min.js" defer></script>
+<script src="hero.js" defer></script>
+</body>
+</html>

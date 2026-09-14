@@ -1,0 +1,26 @@
+# Codes in branches.md with no match in 7-Eleven's live store directory.
+# Each prefix was swept and returned dozens of sibling codes but not these,
+# so they are delisted branches, not fetch failures. Re-run fetch_stores.py to retry.
+00705
+00812
+01503
+01518
+02238
+03395
+04489
+05668
+06775
+06853
+08157
+08104
+06478
+00511
+06494
+04493
+05458
+05855
+06156
+08639
+09120
+10446
+11298

@@ -1,0 +1,8 @@
+# Rebuildable data, deliberately not committed.
+# thailand.pmtiles: 448 MB OpenStreetMap basemap extract — rebuild with the
+#   pmtiles command documented at the top of app.js.
+# _cache.json: raw store-API responses, only used to make fetch_stores.py resumable.
+data/thailand.pmtiles
+data/_cache.json
+# Run log from fetch_stores.py.
+data/_fetch.log

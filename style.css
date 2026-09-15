@@ -152,6 +152,9 @@ button { font: inherit; color: inherit; }
   font-style: normal;
   font-weight: 400;
   font-size: 0.875rem;
+  line-height: 1.2;   /* pin to the h1's own ratio — it always stays English
+                         (brand name, not UI copy), so it must not pick up
+                         the global :lang(th) 1.7 and grow the header */
   color: var(--text2);
 }
 
@@ -372,17 +375,16 @@ button { font: inherit; color: inherit; }
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 9px;
-  height: 5px;
-  margin: -6px 0 0 -5px;
-  border-left: 2px solid var(--surface);
-  border-bottom: 2px solid var(--surface);
-  transform: rotate(-45deg) scale(0);
+  width: 6px;
+  height: 10px;
+  border: solid var(--surface);
+  border-width: 0 2px 2px 0;
+  transform: translate(-50%, -60%) rotate(45deg) scale(0);
   transition: transform 0.15s var(--ease);
 }
 
 .toggle input:checked + .toggle-track { background: var(--accent); border-color: var(--accent); }
-.toggle input:checked + .toggle-track .toggle-thumb { transform: rotate(-45deg) scale(1); }
+.toggle input:checked + .toggle-track .toggle-thumb { transform: translate(-50%, -60%) rotate(45deg) scale(1); }
 .toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
 .toggle-text { font-size: 0.9375rem; color: var(--text); }
@@ -463,9 +465,17 @@ button { font: inherit; color: inherit; }
   text-align: left;
   cursor: pointer;
   transition: background 0.15s var(--ease);
-  /* skip layout/paint for rows scrolled out of view */
+  /* DESIGN.md §6: rows cascade in on the 40ms stagger rowHtml sets inline;
+     transform/opacity only, so it composits. content-visibility keeps rows
+     scrolled out of view free of layout/paint. */
+  animation: row-in 0.3s var(--ease) both;
   content-visibility: auto;
   contain-intrinsic-size: auto 64px;
+}
+
+@keyframes row-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 .result:first-child { border-top: 0; }
 .result:hover { background: var(--surface-alt); }

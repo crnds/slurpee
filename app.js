@@ -30,7 +30,6 @@
      header is brand name, not UI copy — it always stays English. */
   var STRINGS = {
     en: {
-      title: 'Slurpee Map Thailand — every 7-Eleven serving Slurpee',
       description: 'An interactive OpenStreetMap of every 7-Eleven branch in Thailand that serves Slurpee.',
       searchPlaceholder: 'Where’s your nearest Slurpee?',
       searchAria: 'Search by branch name, code or address',
@@ -73,7 +72,6 @@
       yourLocation: 'Your location'
     },
     th: {
-      title: 'แผนที่สลัร์ปี้ ทั่วไทย — 7-Eleven ทุกสาขาที่มีสลัร์ปี้',
       description: 'แผนที่แบบอินเทอร์แอกทีฟของทุกสาขา 7-Eleven ในประเทศไทยที่มีเครื่องสลัร์ปี้',
       searchPlaceholder: 'ร้านสลัร์ปี้ใกล้คุณอยู่ไหน?',
       searchAria: 'ค้นหาด้วยชื่อสาขา รหัส หรือที่อยู่',
@@ -264,6 +262,14 @@
     return setTimeout(fn, 30);
   }
 
+  /* Run after the next paint — lets the shell and loader show before heavy work. */
+  function afterPaint(fn) {
+    requestAnimationFrame(function () { setTimeout(fn, 0); });
+  }
+
+  var mqlMobile = window.matchMedia('(max-width: 768px)');
+  function isMobile() { return mqlMobile.matches; }
+
   function svgIcon(name, cls) {
     return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' +
       '<use href="#icon-' + name + '"></use></svg>';
@@ -379,12 +385,17 @@
     STATE.tileLayer.bringToBack();
   }
 
+  /* The cup art in its ringed badge — shared by the map pin and the detail
+     header; cls picks the CSS frame (.pin-badge / .detail-cup-badge). */
+  function cupBadgeHtml(s, cls) {
+    return '<span class="' + cls + '" style="border-color:' + CUP_HEX[s.cup] + '">' +
+      '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
+      '</span>';
+  }
+
   function pinHtml(s, active) {
     return '<div class="pin' + (s.sp ? '' : ' pin--unconfirmed') +
-      (active ? ' pin--active' : '') + '">' +
-      '<span class="pin-badge" style="border-color:' + CUP_HEX[s.cup] + '">' +
-        '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
-      '</span>' +
+      (active ? ' pin--active' : '') + '">' + cupBadgeHtml(s, 'pin-badge') +
       '</div>';
   }
 
@@ -525,9 +536,9 @@
       '<circle cx="11.6" cy="17.4" r="1" fill="var(--lime)"/>' +
       '</svg>';
     return '<div class="empty">' + cup +
-      '<h2 class="' + (STATE.lang === 'th' ? 'th' : '') + '">' + esc(t('emptyTitle')) + '</h2>' +
-      '<p>' + esc(t('emptyBody')) + '</p>' +
-      '<button type="button" class="btn btn-secondary" id="reset-btn">' + esc(t('clearFilters')) + '</button>' +
+      '<h2 class="' + (STATE.lang === 'th' ? 'th' : '') + '">' + t('emptyTitle') + '</h2>' +
+      '<p>' + t('emptyBody') + '</p>' +
+      '<button type="button" class="btn btn-secondary" id="reset-btn">' + t('clearFilters') + '</button>' +
       '</div>';
   }
 
@@ -543,9 +554,9 @@
     var shown = list.slice(0, LIST_LIMIT);
     var tail = '';
     if (list.length > LIST_LIMIT) {
-      tail = '<p class="list-end">' + esc(t('listEnd')
+      tail = '<p class="list-end">' + t('listEnd')
         .replace('{shown}', fmtCount(LIST_LIMIT))
-        .replace('{total}', fmtCount(list.length))) + '</p>';
+        .replace('{total}', fmtCount(list.length)) + '</p>';
     }
 
     // First screenful synchronously, the rest on idle — one innerHTML with
@@ -578,7 +589,7 @@
     }
 
     rows += '<div class="detail-row">' + svgIcon(s.sp ? 'check' : 'alert') +
-      '<span>' + esc(s.sp ? t('confirmedMsg') : t('unconfirmedMsg')) +
+      '<span>' + (s.sp ? t('confirmedMsg') : t('unconfirmedMsg')) +
       '</span></div>';
 
     var labels = (window.SLURPEE_STORES && window.SLURPEE_STORES.products) || {};
@@ -594,25 +605,22 @@
 
     if (pills) {
       rows += '<div class="detail-row">' + svgIcon('store') +
-        '<span>' + esc(t('alsoInStore')) + '<span class="pills">' + pills + '</span></span></div>';
+        '<span>' + t('alsoInStore') + '<span class="pills">' + pills + '</span></span></div>';
     }
 
     return '<button type="button" class="detail-back" id="detail-back">' +
-      svgIcon('chevron-left') + esc(t('allBranches')) + '</button>' +
-      '<h2 class="detail-title th">' +
-      '<span class="detail-cup-badge" style="border-color:' + CUP_HEX[s.cup] + '">' +
-        '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
-      '</span>' +
+      svgIcon('chevron-left') + t('allBranches') + '</button>' +
+      '<h2 class="detail-title th">' + cupBadgeHtml(s, 'detail-cup-badge') +
       esc(s.name) + '</h2>' +
       '<p class="detail-sub"><span class="code">' + s.code + '</span>' +
       (s.listName ? ' &middot; <span class="th">' + esc(s.listName) + '</span>' : '') +
-      (s.dist != null ? ' &middot; <span class="dist">' + esc(t('away').replace('{dist}', fmtKm(s.dist))) + '</span>' : '') +
+      (s.dist != null ? ' &middot; <span class="dist">' + t('away').replace('{dist}', fmtKm(s.dist)) + '</span>' : '') +
       '</p>' +
       rows +
       '<div class="detail-actions">' +
       '<a class="btn btn-primary" target="_blank" rel="noopener" ' +
       'href="https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng + '">' +
-      svgIcon('directions') + esc(t('directions')) + '</a>' +
+      svgIcon('directions') + t('directions') + '</a>' +
       '</div>';
   }
 
@@ -646,7 +654,7 @@
       var target = Math.max(STATE.map.getZoom(), 16);
       STATE.map.setView([s.lat, s.lng], target, { animate: true });
     }
-    if (window.matchMedia('(max-width: 768px)').matches) setSnap('half');
+    if (isMobile()) setSnap('half');
   }
 
   function closeDetail() {
@@ -711,6 +719,18 @@
     }
   }
 
+  /* Auto-locate on boot only when location was already granted — a permission
+     prompt on first paint is a terrible hello. Where the Permissions API is
+     missing (older WebKit), simply wait for the "Find my freeze" button. */
+  function maybeAutoLocate() {
+    if (!navigator.permissions || !navigator.permissions.query) return;
+    try {
+      navigator.permissions.query({ name: 'geolocation' }).then(function (p) {
+        if (p.state === 'granted') locate(true);
+      }).catch(function () { /* no auto-locate */ });
+    } catch (e) { /* no auto-locate */ }
+  }
+
   // ── BOTTOM SHEET (mobile) ───────────────────────────────────────────────
 
   function setSnap(snap) {
@@ -722,7 +742,7 @@
     var order = ['peek', 'half', 'full'];
 
     function onDown(e) {
-      if (!window.matchMedia('(max-width: 768px)').matches) return;
+      if (!isMobile()) return;
       dragging = true;
       moved = 0;
       startY = e.clientY;
@@ -796,7 +816,7 @@
     var names = Object.keys(counts).sort(function (a, b) {
       return a.localeCompare(b, 'th');
     });
-    var html = '<option value="">' + esc(t('allThailand')) + ' (' + fmtCount(STATE.all.length) + ')</option>';
+    var html = '<option value="">' + t('allThailand') + ' (' + fmtCount(STATE.all.length) + ')</option>';
     names.forEach(function (n) {
       html += '<option value="' + esc(n) + '">' + esc(n) + ' (' + fmtCount(counts[n]) + ')</option>';
     });
@@ -850,7 +870,8 @@
   }
 
   function applyStaticStrings() {
-    document.title = t('title');
+    // The page title is the brand name, not UI copy — it never switches to Thai.
+    document.title = 'Slurpee Map Thailand';
     var desc = document.querySelector('meta[name="description"]');
     if (desc) desc.setAttribute('content', t('description'));
 
@@ -966,7 +987,7 @@
     if (!loader) return;
     loader.innerHTML = '<div class="loader-card">' +
       '<svg class="icon loader-cup" aria-hidden="true"><use href="#icon-alert"></use></svg>' +
-      '<p class="loader-copy">' + esc(t('napping')) + '</p>' +
+      '<p class="loader-copy">' + t('napping') + '</p>' +
       '<p style="margin:0;font-size:.875rem;color:var(--text2)">' + esc(msg) + '</p></div>';
   }
 
@@ -1034,25 +1055,20 @@
     // Stage 2: let the shell and loader paint first, then do the heavy data
     // pass. Unpacking 2,600 branches and building the first screen in one
     // synchronous block was the boot long-task on phones.
-    requestAnimationFrame(function () {
-      setTimeout(function () {
-        STATE.all = unpack(raw);
+    afterPaint(function () {
+      STATE.all = unpack(raw);
 
-        buildProvinceSelect();
-        restore();
+      buildProvinceSelect();
+      restore();
 
-        bind();
-        initSheet();
-        initSidebarCollapse();
-        applyFilters();
-        locate(true);
+      bind();
+      initSheet();
+      initSidebarCollapse();
+      applyFilters();
+      maybeAutoLocate();
 
-        el.loader.classList.add('is-out');
-        setTimeout(function () { el.loader.hidden = true; }, 400);
-
-        // hero.js reads this to know the data is up
-        document.dispatchEvent(new CustomEvent('slurpee:ready'));
-      }, 0);
+      el.loader.classList.add('is-out');
+      setTimeout(function () { el.loader.hidden = true; }, 400);
     });
   }
 
@@ -1060,5 +1076,14 @@
     document.addEventListener('DOMContentLoaded', init);
   } else {
     init();
+  }
+
+  // Caches PMTiles byte ranges (see sw.js) so repeat visits don't re-fetch
+  // the same basemap tiles. file:// and plain `http.server` never reach this
+  // (no Range support to cache in the first place); silently skip there.
+  if ('serviceWorker' in navigator && location.protocol.indexOf('http') === 0) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* offline-first is a bonus, not a requirement */ });
+    });
   }
 })();

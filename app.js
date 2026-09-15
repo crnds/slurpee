@@ -553,6 +553,7 @@
       el.results.innerHTML = emptyHtml();
       var reset = document.getElementById('reset-btn');
       if (reset) reset.addEventListener('click', resetFilters);
+      syncScrollFade(el.sidebarScroll);
       return;
     }
     var shown = list.slice(0, LIST_LIMIT);
@@ -568,6 +569,7 @@
     var first = shown.slice(0, LIST_FIRST);
     var rest = shown.slice(LIST_FIRST);
     el.results.innerHTML = first.map(rowHtml).join('');
+    syncScrollFade(el.sidebarScroll);
 
     if (rest.length || tail) {
       var token = STATE.listRender;
@@ -575,6 +577,7 @@
         if (token !== STATE.listRender) return;   // a newer filter pass owns the list
         el.results.insertAdjacentHTML('beforeend',
           rest.map(function (s, i) { return rowHtml(s, i + LIST_FIRST); }).join('') + tail);
+        syncScrollFade(el.sidebarScroll);
       });
     }
   }
@@ -612,20 +615,21 @@
         '<span>' + t('alsoInStore') + '<span class="pills">' + pills + '</span></span></div>';
     }
 
-    return '<button type="button" class="detail-back" id="detail-back">' +
+    return '<div class="detail-head">' +
+      '<button type="button" class="detail-back" id="detail-back">' +
       svgIcon('chevron-left') + t('allBranches') + '</button>' +
+      '<a class="btn btn-primary detail-go" target="_blank" rel="noopener" ' +
+      'aria-label="' + esc(t('directions')) + '" ' +
+      'href="https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng + '">' +
+      svgIcon('directions') + '<span>' + t('directions') + '</span></a>' +
+      '</div>' +
       '<h2 class="detail-title th">' + cupBadgeHtml(s, 'detail-cup-badge') +
       esc(s.name) + '</h2>' +
       '<p class="detail-sub"><span class="code">' + s.code + '</span>' +
       (s.listName ? ' &middot; <span class="th">' + esc(s.listName) + '</span>' : '') +
       (s.dist != null ? ' &middot; <span class="dist">' + t('away').replace('{dist}', fmtKm(s.dist)) + '</span>' : '') +
       '</p>' +
-      rows +
-      '<div class="detail-actions">' +
-      '<a class="btn btn-primary" target="_blank" rel="noopener" ' +
-      'href="https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng + '">' +
-      svgIcon('directions') + t('directions') + '</a>' +
-      '</div>';
+      rows;
   }
 
   function select(s, fromList) {
@@ -646,7 +650,8 @@
 
     el.detailScroll.innerHTML = detailHtml(s);
     el.detail.hidden = false;
-    document.getElementById('detail-back').addEventListener('click', closeDetail);
+    el.detailScroll.scrollTop = 0;
+    syncScrollFade(el.detailScroll);
 
     Array.prototype.forEach.call(el.results.querySelectorAll('.result'), function (b) {
       b.setAttribute('aria-current', b.dataset.code === s.code ? 'true' : 'false');
@@ -658,7 +663,9 @@
       var target = Math.max(STATE.map.getZoom(), 16);
       STATE.map.setView([s.lat, s.lng], target, { animate: true });
     }
-    if (isMobile()) setSnap('half');
+    // Full, not half: half leaves the detail with a scrollport barely taller
+    // than its own header, and the user has to drag before they can read it.
+    if (isMobile()) setSnap('full');
   }
 
   function closeDetail() {
@@ -782,6 +789,20 @@
     return { peek: el.sidebar.offsetHeight - SHEET_PEEK, half: el.sidebar.offsetHeight * 0.46, full: 0 }[name];
   }
 
+  function syncScrollFade(node) {
+    node.classList.toggle('is-at-end', node.scrollTop + node.clientHeight >= node.scrollHeight - 2);
+  }
+
+  /* Both scrollports change height whenever the sheet's --sheet-hidden does
+     (see style.css), so what's overflowing changes with it. A frame late, so
+     the new snap's padding has actually been laid out. */
+  function afterSheetResize() {
+    requestAnimationFrame(function () {
+      syncScrollFade(el.sidebarScroll);
+      syncScrollFade(el.detailScroll);
+    });
+  }
+
   function sheetNearestSnap(y) {
     var names = ['peek', 'half', 'full'], best = names[0], bestDist = Infinity;
     for (var i = 0; i < names.length; i++) {
@@ -805,6 +826,8 @@
       el.sidebar.dataset.snap = snapName;
       STATE.sheet.y = target;
       STATE.sheet.v = 0;
+      STATE.sheet.raf = null;
+      afterSheetResize();
       return;
     }
 
@@ -822,9 +845,13 @@
       if (Math.abs(target - STATE.sheet.y) < SHEET_REST_POS && Math.abs(STATE.sheet.v) < SHEET_REST_VEL) {
         STATE.sheet.y = target;
         STATE.sheet.v = 0;
+        // Clearing this is what makes "is a settle in flight?" answerable —
+        // it used to keep the last rAF id forever once a settle landed.
+        STATE.sheet.raf = null;
         el.sidebar.style.transform = '';
         el.sidebar.dataset.snap = snapName;
         el.sidebar.classList.remove('is-settling');
+        afterSheetResize();
         return;
       }
       el.sidebar.style.transform = 'translateY(' + STATE.sheet.y + 'px)';
@@ -842,13 +869,21 @@
 
     function onDown(e) {
       if (!isMobile()) return;
-      if (STATE.sheet.raf != null) cancelAnimationFrame(STATE.sheet.raf);
+      var wasSettling = STATE.sheet.raf != null;
+      if (wasSettling) cancelAnimationFrame(STATE.sheet.raf);
+      STATE.sheet.raf = null;
       STATE.sheet.gen++;   // supersede any in-flight settle
       el.sidebar.classList.remove('is-settling');
       dragging = true;
       moved = 0;
       startClientY = e.clientY;
-      baseY = STATE.sheet.y;   // the live presentation value — never the canonical snap position
+      /* Mid-settle, STATE.sheet.y is the live presentation value and the only
+         truth — never the canonical snap position. At rest it isn't: the
+         transform comes from CSS [data-snap], which tracks dvh, so a rotation
+         since the last settle has moved the sheet without telling us.
+         Recompute from the current size instead of trusting the cache. */
+      baseY = wasSettling ? STATE.sheet.y : sheetSnapY(STATE.sheet.snapName);
+      STATE.sheet.y = baseY;
       history = [{ t: e.timeStamp, y: baseY }];
       el.sidebar.classList.add('is-dragging');
       el.grab.setPointerCapture(e.pointerId);
@@ -904,6 +939,21 @@
       var i = order.indexOf(STATE.sheet.snapName);
       setSnap(order[i === 2 ? 0 : i + 1]);
     });
+
+    /* Rotation and the mobile URL bar showing/hiding change the dvh the sheet
+       is sized in, so both scrollports change height. The sheet's own geometry
+       needs nothing here — the snap transforms and --sheet-hidden are both
+       CSS, and STATE.sheet.y is re-derived at pointerdown above. */
+    var resizeRaf = null;
+    function onViewportChange() {
+      if (resizeRaf != null) cancelAnimationFrame(resizeRaf);
+      resizeRaf = requestAnimationFrame(function () {
+        resizeRaf = null;
+        afterSheetResize();
+      });
+    }
+    window.addEventListener('resize', onViewportChange, { passive: true });
+    mqlMobile.addEventListener('change', onViewportChange);
   }
 
   // ── SIDEBAR COLLAPSE (desktop) ───────────────────────────────────────────
@@ -1033,12 +1083,28 @@
 
     renderList();
     renderCount();
-    if (STATE.selected) el.detailScroll.innerHTML = detailHtml(STATE.selected);
+    if (STATE.selected) {
+      el.detailScroll.innerHTML = detailHtml(STATE.selected);
+      syncScrollFade(el.detailScroll);
+    }
   }
 
   // ── WIRING ──────────────────────────────────────────────────────────────
 
   function bind() {
+    el.sidebarScroll.addEventListener('scroll', function () {
+      syncScrollFade(el.sidebarScroll);
+    }, { passive: true });
+    el.detailScroll.addEventListener('scroll', function () {
+      syncScrollFade(el.detailScroll);
+    }, { passive: true });
+
+    // Delegated, like .result below: detailHtml() is re-rendered in place on a
+    // language switch, which threw away a handler bound to the button itself.
+    el.detailScroll.addEventListener('click', function (e) {
+      if (e.target.closest('.detail-back')) closeDetail();
+    });
+
     var onSearch = debounce(function () {
       STATE.query = el.search.value;
       applyFilters();

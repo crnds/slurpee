@@ -281,6 +281,18 @@ button { font: inherit; color: inherit; }
   overscroll-behavior: contain;
 }
 
+/* iOS overlay scrollbars are invisible at rest, so a short fade at the bottom
+   edge is the only cue that there is more below. JS drops it via .is-at-end
+   once the scroller bottoms out — mask-image isn't animatable, so the toggle
+   snaps rather than eases, which is fine over 32px. */
+.sidebar-scroll,
+.detail-scroll {
+  --scroll-fade: 32px;
+  mask-image: linear-gradient(to bottom, #000 calc(100% - var(--scroll-fade)), transparent 100%);
+}
+.sidebar-scroll.is-at-end,
+.detail-scroll.is-at-end { mask-image: none; }
+
 .sidebar-stat { padding: 1.125rem 1.25rem 0.875rem; border-bottom: 1px solid var(--border); }
 
 .hero {
@@ -402,6 +414,7 @@ button { font: inherit; color: inherit; }
   font-family: var(--font-body);
   font-weight: 600;
   font-size: 0.9375rem;
+  text-decoration: none;   /* <a class="btn"> otherwise picks up the UA underline */
   cursor: pointer;
   transition: background 0.15s var(--ease), transform 0.12s var(--ease);
 }
@@ -580,11 +593,32 @@ button { font: inherit; color: inherit; }
   padding: var(--detail-pad);
 }
 
+/* Back link on the left, Directions on the right. Keeping the primary action
+   in the header instead of a footer means it never depends on the scroll
+   position — it is visible the moment the panel opens, at any snap state. */
+.detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.875rem;
+}
+
+.detail-go {
+  flex: none;
+  gap: 0.375rem;
+  min-height: 34px;
+  padding: 0 0.8125rem;
+  font-size: 0.8125rem;
+  white-space: nowrap;
+}
+.detail-go .icon { width: 15px; height: 15px; }
+
 .detail-back {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  margin-bottom: 0.875rem;
+  min-width: 0;
   padding: 0;
   border: 0;
   background: none;
@@ -654,21 +688,6 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   transition: transform 0.2s var(--spring);
 }
 .pill:hover { transform: rotate(-2deg) scale(1.04); }
-
-/* Sticky footer inside .detail-scroll (not a separate flex row of .detail) so
-   the Directions button stays reachable even when the rows above overflow
-   the sheet's current snap height, instead of scrolling out of view. */
-.detail-actions {
-  display: flex;
-  gap: 0.5rem;
-  position: sticky;
-  bottom: calc(-1 * var(--detail-pad));
-  margin: 1.125rem calc(-1 * var(--detail-pad)) calc(-1 * var(--detail-pad));
-  padding: 0.875rem var(--detail-pad) calc(var(--detail-pad) + env(safe-area-inset-bottom, 0px));
-  background: var(--surface);
-  border-top: 1px solid var(--border);
-}
-.detail-actions .btn { flex: 1; }
 
 /* ── LANGUAGE SWITCH ─────────────────────────────────────────────────────── */
 /* Lives in the site header, right of the search bar (DESIGN.md §4). Text-only,
@@ -865,6 +884,8 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   .ctl { width: 40px; height: 40px; }
 
   .sidebar {
+    --sheet-h: 70dvh;
+    --grab-h: 20px;
     top: auto;
     left: 0;
     right: 0;
@@ -872,16 +893,41 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
     width: 100%;
     border-radius: var(--radius) var(--radius) 0 0;
     border-bottom: 0;
-    height: 70dvh;
+    height: var(--sheet-h);
     transform: translateY(calc(100% - var(--peek, 100px)));
     transition: transform 0.4s var(--spring);
+    /* Every snap state is a transform, which moves the sheet visually without
+       shrinking its layout box — at "half" ~46% of the sheet lays out below
+       the fold, taking .sidebar-scroll's scrollport (and .detail) with it,
+       where nothing can be read or scrolled to. --sheet-hidden mirrors each
+       snap's translateY back into the layout so the content box ends at the
+       visible edge.
+
+       Deliberately declarative, in the same dvh the height is expressed in:
+       on rotation the browser resolves both together, whereas JS measuring
+       this in px reads a layout that is still a frame behind — innerHeight
+       updates before the dvh does. Keep it in sync with the transforms
+       below; there is no JS fallback. */
+    padding-bottom: var(--sheet-hidden, 0px);
+    --sheet-hidden: calc(var(--sheet-h) - var(--peek, 100px));
   }
 
-  .sidebar[data-snap="half"] { transform: translateY(46%); }
-  .sidebar[data-snap="full"] { transform: translateY(0); }
+  .sidebar[data-snap="half"] { transform: translateY(46%); --sheet-hidden: calc(0.46 * var(--sheet-h)); }
+  .sidebar[data-snap="full"] { transform: translateY(0); --sheet-hidden: 0px; }
+  .sidebar.is-collapsed {
+    transform: translateY(calc(100% - var(--peek, 100px)));
+    --sheet-hidden: calc(var(--sheet-h) - var(--peek, 100px));
+  }
+
+  /* Mid-gesture the sheet sits between snaps, so lay it out at full height:
+     the drag then has nothing to reflow per frame and simply reveals real
+     content as the sheet rises. Must stay after the [data-snap] rules — same
+     specificity, source order decides. */
   .sidebar.is-dragging,
-  .sidebar.is-settling { transition: none; }
-  .sidebar.is-collapsed { transform: translateY(calc(100% - var(--peek, 100px))); }
+  .sidebar.is-settling {
+    transition: none;
+    --sheet-hidden: 0px;
+  }
 
   .sidebar-toggle { display: none; }
 
@@ -889,12 +935,18 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
     display: grid;
     place-items: center;
     width: 100%;
-    height: 20px;
+    height: var(--grab-h);
     padding: 0;
     border: 0;
     background: none;
     cursor: grab;
     flex: none;
+    /* .detail is absolutely positioned over the whole sheet; z-index only
+       applies to positioned elements, so an unpositioned handle sat *under*
+       the overlay and the sheet became undraggable whenever a branch was
+       open. .detail starts below the handle now, and this is the backstop. */
+    position: relative;
+    z-index: 3;
     /* Scoped to the handle only, not .sidebar: touch-action intersects down
        the ancestor chain, so setting it on the whole sheet blocked native
        touch-scrolling inside .sidebar-scroll and .detail-scroll too — the
@@ -919,15 +971,23 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   .result { padding: 0.625rem 1rem; }
   .list-end { padding: 0.75rem 1rem; }
 
-  .detail-scroll { --detail-pad: 1rem; padding: var(--detail-pad); }
-  .detail-back { margin-bottom: 0.625rem; }
+  /* Clear the grab handle (see .grab above) and follow the sheet's visible
+     bottom edge, since .detail is positioned against .sidebar's padding box
+     and so is unaffected by the --sheet-hidden padding on its own. */
+  .detail {
+    top: var(--grab-h);
+    bottom: var(--sheet-hidden, 0px);
+  }
+
+  .detail-scroll {
+    --detail-pad: 1rem;
+    padding: var(--detail-pad) var(--detail-pad)
+             calc(var(--detail-pad) + env(safe-area-inset-bottom, 0px));
+  }
+  .detail-head { margin-bottom: 0.625rem; }
   .detail h2 { font-size: 1.1875rem; }
   .detail-sub { margin-bottom: 0.625rem; }
   .detail-row { padding: 0.625rem 0; }
-  .detail-actions {
-    margin: 0.875rem calc(-1 * var(--detail-pad)) calc(-1 * var(--detail-pad));
-    padding: 0.75rem var(--detail-pad) calc(var(--detail-pad) + env(safe-area-inset-bottom, 0px));
-  }
 
   /* Phones: drop the perpetual idle loops — the map and sheet gestures need
      every frame. The sonar on the "me" dot stays: it only exists after the
@@ -937,7 +997,7 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
 
 @media (max-width: 480px) {
   .search input { font-size: 0.9375rem; }
-  .sidebar { height: 76dvh; }
+  .sidebar { --sheet-h: 76dvh; }
 }
 
 /* ── REDUCED MOTION ─────────────────────────────────────────────────────── */

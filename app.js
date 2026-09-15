@@ -762,7 +762,7 @@
   var SHEET_REST_POS = 0.5, SHEET_REST_VEL = 0.5;   // px / px-per-second settle thresholds
   var SHEET_DECEL = 0.998;                          // momentum projection decay
   var SHEET_RUBBERBAND = 0.55;
-  var SHEET_PEEK = 148;
+  var SHEET_PEEK = 100;   // keep in sync with the --peek fallback in style.css
   var SHEET_VELOCITY_WINDOW = 100;                  // ms of pointer history kept for release velocity
 
   function sheetSpringStep(pos, vel, target, dt) {

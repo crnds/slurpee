@@ -70,6 +70,23 @@
     ['FP', 'var(--mango)']        // Food Place
   ];
 
+  /* One cup art asset per branch, assigned by hashing the store code so it
+     is random-looking across the map but stable for a given branch (no
+     colour swap on re-render). assets/cups/cup_<name>.png, sliced from the
+     16-cup sprite. */
+  var CUP_COLORS = [
+    'lime', 'blue', 'purple', 'pink',
+    'orange', 'red', 'teal', 'black',
+    'lavender', 'skyblue', 'mint', 'cream',
+    'navy', 'magenta', 'yellow', 'white'
+  ];
+
+  function cupFor(code) {
+    var h = 0;
+    for (var i = 0; i < code.length; i++) h = (h * 31 + code.charCodeAt(i)) >>> 0;
+    return CUP_COLORS[h % CUP_COLORS.length];
+  }
+
   // ── STATE ───────────────────────────────────────────────────────────────
 
   var STATE = {
@@ -166,6 +183,7 @@
         sp: r[10] === 1,
         listName: r[11] || '',
         dist: null,
+        cup: cupFor(r[0]),
         // one lower-cased haystack, built once, for fast substring search
         hay: (r[0] + ' ' + r[1] + ' ' + (r[11] || '') + ' ' + (r[7] || '') + ' ' +
           (P[r[4]] || '') + ' ' + (D[r[5]] || '')).toLowerCase()
@@ -267,18 +285,21 @@
     }
     return '<div class="pin' + (s.sp ? '' : ' pin--unconfirmed') +
       (active ? ' pin--active' : '') + '">' +
-      '<svg aria-hidden="true"><use href="#icon-straw"></use></svg>' +
+      '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
       (dots ? '<span class="pin-dots">' + dots + '</span>' : '') +
       '</div>';
   }
+
+  var PIN_ICON_SIZE = [24, 26];
+  var PIN_ICON_ANCHOR = [12, 25];
 
   function makeMarker(s) {
     var m = L.marker([s.lat, s.lng], {
       icon: L.divIcon({
         className: 'pin-icon',
         html: pinHtml(s, STATE.selected === s),
-        iconSize: [30, 30],
-        iconAnchor: [15, 15]
+        iconSize: PIN_ICON_SIZE,
+        iconAnchor: PIN_ICON_ANCHOR
       }),
       keyboard: true,
       title: s.name,
@@ -294,8 +315,8 @@
     m.setIcon(L.divIcon({
       className: 'pin-icon',
       html: pinHtml(s, active),
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
+      iconSize: PIN_ICON_SIZE,
+      iconAnchor: PIN_ICON_ANCHOR
     }));
   }
 

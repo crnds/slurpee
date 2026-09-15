@@ -592,26 +592,32 @@ button { font: inherit; color: inherit; }
 
 .pin {
   position: relative;
-  width: 30px;
-  height: 30px;
-  display: grid;
-  place-items: center;
-  border-radius: 50%;
-  background: var(--surface);
-  border: 2px solid var(--accent);
-  box-shadow: 0 2px 6px rgba(27, 39, 51, 0.22);
-  color: var(--accent);
-  transition: transform 0.25s var(--spring), background 0.2s var(--ease);
+  width: 24px;
+  height: 26px;
+  transition: transform 0.25s var(--spring);
 }
 
-.pin svg { width: 15px; height: 15px; }
+.pin-cup {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: bottom;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(27, 39, 51, 0.35));
+}
 
-.pin--unconfirmed { border-color: var(--text2); color: var(--text2); }
+.pin--unconfirmed .pin-cup { filter: grayscale(1) opacity(0.6); }
 
 .pin:hover { transform: scale(1.12); z-index: 10; }
 
-.pin--active { background: var(--accent); color: var(--surface); transform: scale(1.15); }
-.pin--active.pin--unconfirmed { background: var(--text2); border-color: var(--text2); }
+.pin--active { transform: scale(1.22); z-index: 11; }
+.pin--active .pin-cup {
+  filter: drop-shadow(0 0 5px var(--accent)) drop-shadow(0 2px 3px rgba(27, 39, 51, 0.35));
+}
+.pin--active.pin--unconfirmed .pin-cup {
+  filter: grayscale(1) drop-shadow(0 0 5px var(--text2));
+}
 
 /* Product-category dots tucked at the pin's base — the only rainbow allowed */
 .pin-dots {

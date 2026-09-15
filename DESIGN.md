@@ -89,12 +89,15 @@ Status is always paired with text, never colour alone.
 
 ### The cup-art exception
 
-`assets/cups/cup_*.png` — sixteen coloured cup sprites, hash-assigned per branch so a given
-7-Eleven always gets the same cup — are **product imagery, not chrome**. They are the one
-place in this system where colour runs completely free, and that is the whole point: the
-interface around them is near-monochrome *precisely so* the cups carry the colour. Keep
-everything within roughly one pin-radius of the art neutral — no coloured halos, no tinted
-cluster backgrounds, no coloured labels touching a cup.
+`assets/cups/cup_*.png` — thirteen coloured cup sprites (of a 16-cup sheet; black, cream and
+white are excluded from pin duty because they disappear into the pale basemap and the dark
+cluster fills), hash-assigned per branch so a given 7-Eleven always gets the same cup — are
+**product imagery, not chrome**. They are the one place in this system where colour runs
+completely free, and that is the whole point: the interface around them is near-monochrome
+*precisely so* the cups carry the colour. The one sanctioned touch is the pin badge's own
+ring (§4), which is sampled *from* the cup it wraps — that's the art repeating itself, not a
+new colour entering the frame. Beyond that ring, keep everything neutral: no halo in a hue
+other than the cup's own, no tinted cluster backgrounds, no coloured labels touching a cup.
 
 ### Banned
 
@@ -131,10 +134,10 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
 - One pink CTA per screen. Two is the absolute ceiling, and the second had better be in a sheet.
 
 **Map Pins** — the stars of the show:
-- Store pins are the **cup art**: a `cup_*.png` sprite with an ink drop-shadow, no coloured ring, no tint. The sprite is the colour; the pin adds none.
-- Active/selected pin: Shock Pink glow (`drop-shadow(0 0 5px)`) and a spring pop from `1 → 1.15`. Pink marks *your* selection, which is exactly its job.
-- Unconfirmed store: same cup, Melted Gray glow, reduced opacity. Grayed out, never recoloured.
-- Category dots: 3px dots tucked at the pin's base, up to five, from the ladder in §2. This and the product pills are the only places the ladder appears.
+- Store pins are the **cup art** in a Cup White circular badge: `cup_*.png` centred at ~68% of the badge diameter, ring in the cup's *own* colour, ink drop shadow beneath. The ring colour is sampled per-asset (`CUP_HEX` in `app.js`) so it always matches the art exactly — it is decoration drawn from the palette §2 already sanctioned for the cup art, not an independently chosen hue, so it does not open a fourth colour system.
+- Active/selected pin: a two-step halo on the badge — a Cup White gap ring, then a Shock Pink ring — plus the spring pop to `1 → 1.22`. Pink marks *your* selection regardless of which cup colour the badge already carries.
+- Unconfirmed store: the whole badge — ring, fill and cup — desaturates to grayscale at 65% opacity. Grayed out, never recoloured.
+- Category dots: 3px dots tucked at the badge's base, up to five, from the ladder in §2, each with a thin Cup White halo so they stay legible sitting on any basemap tile. This and the product pills are the only places the ladder appears.
 - Low-zoom dots (canvas layer, below the cup threshold): Cup White fill, 2px ring. The ring encodes *availability*, so it belongs to lime, not pink — `--lime-ink` when Slurpee is confirmed, Melted Gray when not. Use the ink twin, not raw `--lime`: a 2px ring at 1.9:1 disappears on a pale basemap, and at national zoom this layer is 2,600 dots — the single largest colour surface in the app. Pink here would flood the map and strip the accent of its meaning.
 
 **Cards & Panels:**

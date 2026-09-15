@@ -176,13 +176,24 @@
   /* One cup art asset per branch, assigned by hashing the store code so it
      is random-looking across the map but stable for a given branch (no
      colour swap on re-render). assets/cups/cup_<name>.png, sliced from the
-     16-cup sprite. */
+     16-cup sprite. black/cream/white are excluded here — they blend into
+     the pale basemap and dark cluster fills, so the pin becomes unreadable
+     against the map itself. */
   var CUP_COLORS = [
     'lime', 'blue', 'purple', 'pink',
-    'orange', 'red', 'teal', 'black',
-    'lavender', 'skyblue', 'mint', 'cream',
-    'navy', 'magenta', 'yellow', 'white'
+    'orange', 'red', 'teal',
+    'lavender', 'skyblue', 'mint',
+    'navy', 'magenta', 'yellow'
   ];
+
+  /* Badge ring colour per cup — sampled from each PNG's own dominant hue, so
+     the ring always matches the art exactly rather than a guessed keyword. */
+  var CUP_HEX = {
+    lime: '#A8D018', blue: '#0080E8', purple: '#6038B0', pink: '#F85088',
+    orange: '#F88800', red: '#E01820', teal: '#00A098',
+    lavender: '#B8A0E8', skyblue: '#88D0F8', mint: '#98D8A0',
+    navy: '#003080', magenta: '#D81868', yellow: '#F8D020'
+  };
 
   function cupFor(code) {
     var h = 0;
@@ -389,13 +400,17 @@
     }
     return '<div class="pin' + (s.sp ? '' : ' pin--unconfirmed') +
       (active ? ' pin--active' : '') + '">' +
-      '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
+      '<span class="pin-badge" style="border-color:' + CUP_HEX[s.cup] + '">' +
+        '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
+      '</span>' +
       (dots ? '<span class="pin-dots">' + dots + '</span>' : '') +
       '</div>';
   }
 
-  var PIN_ICON_SIZE = [24, 26];
-  var PIN_ICON_ANCHOR = [12, 25];
+  /* Round badge, no pointer tail — anchor is the badge's own centre rather
+     than a bottom tip. */
+  var PIN_ICON_SIZE = [34, 34];
+  var PIN_ICON_ANCHOR = [17, 17];
 
   function makeMarker(s) {
     var m = L.marker([s.lat, s.lng], {
@@ -665,20 +680,20 @@
     el.geoError.querySelector('span').textContent = msg;
   }
 
-  function locate() {
+  function locate(silent) {
     el.geoError.hidden = true;
 
     if (!navigator.geolocation) {
-      showGeoError(t('geoUnsupported'));
+      if (!silent) showGeoError(t('geoUnsupported'));
       return;
     }
 
-    el.locateLabel.textContent = t('finding');
     el.locateBtn.disabled = true;
+    el.locateBtn.setAttribute('aria-label', t('finding'));
 
     function done() {
-      el.locateLabel.textContent = t('findFreeze');
       el.locateBtn.disabled = false;
+      el.locateBtn.setAttribute('aria-label', t('findFreeze'));
     }
 
     try {
@@ -703,11 +718,11 @@
         el.sidebarScroll.scrollTop = 0;
       }, function (err) {
         done();
-        showGeoError(err.code === 1 ? t('geoDenied') : t('geoFail'));
+        if (!silent) showGeoError(err.code === 1 ? t('geoDenied') : t('geoFail'));
       }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
     } catch (e) {
       done();
-      showGeoError(t('geoUnavailable'));
+      if (!silent) showGeoError(t('geoUnavailable'));
     }
   }
 
@@ -844,7 +859,7 @@
     el.grab.setAttribute('aria-label', t('grabAria'));
     el.provinceLabel.textContent = t('province');
     el.confirmedLabel.textContent = t('confirmedOnly');
-    if (!el.locateBtn.disabled) el.locateLabel.textContent = t('findFreeze');
+    if (!el.locateBtn.disabled) el.locateBtn.setAttribute('aria-label', t('findFreeze'));
     el.zoomIn.setAttribute('aria-label', t('zoomIn'));
     el.zoomOut.setAttribute('aria-label', t('zoomOut'));
     el.loaderCopy.textContent = t('loaderCopy');
@@ -913,7 +928,7 @@
       applyFilters();
     });
 
-    el.locateBtn.addEventListener('click', locate);
+    el.locateBtn.addEventListener('click', function () { locate(false); });
 
     el.results.addEventListener('click', function (e) {
       var btn = e.target.closest('.result');
@@ -958,8 +973,7 @@
       grab: document.getElementById('grab'),
       province: document.getElementById('province'),
       confirmedOnly: document.getElementById('confirmed-only'),
-      locateBtn: document.getElementById('locate-btn'),
-      locateLabel: document.getElementById('locate-label'),
+      locateBtn: document.getElementById('locate-map-btn'),
       geoError: document.getElementById('geo-error'),
       results: document.getElementById('results'),
       detail: document.getElementById('detail'),
@@ -1025,6 +1039,7 @@
         bind();
         initSheet();
         applyFilters();
+        locate(true);
 
         el.loader.classList.add('is-out');
         setTimeout(function () { el.loader.hidden = true; }, 400);

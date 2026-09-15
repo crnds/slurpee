@@ -224,14 +224,6 @@
           <span class="toggle-text" id="confirmed-label">Confirmed machines only</span>
         </label>
 
-        <button type="button" class="btn btn-primary" id="locate-btn">
-          <svg class="icon" aria-hidden="true"><use href="#icon-locate"></use></svg>
-          <span id="locate-label">Find my freeze</span>
-        </button>
-        <p class="notice" id="geo-error" hidden role="alert">
-          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
-          <span></span>
-        </p>
         <p class="notice notice--info" id="basemap-notice" hidden>
           <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
           <span id="basemap-notice-text">The map background is served in byte ranges, which this page
@@ -257,12 +249,19 @@
   </div>
 
   <div class="map-controls">
+    <button type="button" class="ctl" id="locate-map-btn" aria-label="Find my freeze">
+      <svg class="icon" aria-hidden="true"><use href="#icon-locate"></use></svg>
+    </button>
     <button type="button" class="ctl" id="zoom-in" aria-label="Zoom in">
       <svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
     </button>
     <button type="button" class="ctl" id="zoom-out" aria-label="Zoom out">
       <svg class="icon" aria-hidden="true"><use href="#icon-minus"></use></svg>
     </button>
+    <p class="notice notice--floating" id="geo-error" hidden role="alert">
+      <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+      <span></span>
+    </p>
   </div>
 
   <!-- ── LOADING ──────────────────────────────────────────────────────── -->

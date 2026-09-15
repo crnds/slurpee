@@ -147,7 +147,7 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
 - High-density lists: skip cards entirely — Frost Line top dividers + negative space instead. Selected row gets an 8% Shock Pink tint, nothing more.
 
 **Search Bar** — "Find your freeze":
-- Floating over the map, Cup White, full pill radius, soft ink-tinted shadow. Prefix straw icon in Shock Pink. Placeholder copy in Fredoka 500: "Where's your nearest Slurpee?"
+- Floating over the map, Cup White, full pill radius, soft ink-tinted shadow. Prefix magnifier icon in Shock Pink. Placeholder copy in Fredoka 500: "Where's your nearest Slurpee?"
 - Focus: border goes Shock Pink, shadow deepens. Suggestions drop down as a Cup White sheet with staggered 40ms-per-row entrance.
 
 **Language Switch** — top-right corner, alongside the zoom controls: a two-segment pill (`EN` / `TH`) in the same Cup White + Frost Line chrome as `.ctl`. The active segment gets the `--accent-deep` fill with white text (same physics as a primary button); the inactive segment is Melted Gray on Cup White. No third state, no flag icons — text only. Switching re-renders the sidebar logotype (Chango ⇄ Itim, DESIGN.md §3) and every chrome string; branch data (names, addresses, product labels) is already authentically Thai and never re-translates.
@@ -177,7 +177,7 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
 - **Bottom sheet interruptibility:** the sheet always animates from its live on-screen position, never snaps back to a canonical target first — grabbing it again mid-settle continues exactly from wherever it is under the finger, with no jump.
 - **Bottom sheet momentum:** on release, the sheet projects where its velocity would carry it (Apple's WWDC "Designing Fluid Interfaces" decay formula) and settles on whichever of peek/half/full sits nearest that projected point, not the nearest to the raw release position — a hard flick can skip a step; a slow drag that barely crosses the midpoint won't over-commit.
 - **Staggered orchestration:** sidebar store lists cascade in with 40ms delays. Never mount a list instantly.
-- **Perpetual micro-life:** the "You are here" dot emits a slow Shock Pink sonar ring; the search bar straw icon does a 6s idle wiggle. Motion amplitude stays tiny — alive, not distracting.
+- **Perpetual micro-life:** the "You are here" dot emits a slow Shock Pink sonar ring; the search bar magnifier icon does a 6s idle wiggle. Motion amplitude stays tiny — alive, not distracting.
 - **Product pill hover:** pills do a 2° tilt-and-bounce, like they're jiggling in syrup.
 - **Performance:** animate `transform` and `opacity` only. Never `top/left/width/height`. Map markers animate via transforms on a dedicated layer.
 - **Reduced motion:** honour `prefers-reduced-motion` — springs collapse to instant, near-0ms swaps (no fade, no bounce), perpetual loops stop.

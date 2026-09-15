@@ -209,7 +209,10 @@
     basemapMissing: false,
     tileLayer: null,
     meMarker: null,
-    listRender: 0       // token: latest renderList pass owns the list DOM
+    listRender: 0,      // token: latest renderList pass owns the list DOM
+    sheet: {            // bottom sheet (mobile): live presentation value, never the target
+      y: 0, v: 0, target: 0, snapName: 'half', gen: 0, raf: null
+    }
   };
 
   var el = {};
@@ -269,6 +272,9 @@
 
   var mqlMobile = window.matchMedia('(max-width: 768px)');
   function isMobile() { return mqlMobile.matches; }
+
+  var mqlReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  function reducedMotion() { return mqlReducedMotion.matches; }
 
   function svgIcon(name, cls) {
     return '<svg class="icon' + (cls ? ' ' + cls : '') + '" aria-hidden="true">' +
@@ -732,42 +738,159 @@
   }
 
   // ── BOTTOM SHEET (mobile) ───────────────────────────────────────────────
+  /* Fluid-interfaces physics (apple-design skill):
+       - STATE.sheet.y/.v is the live presentation value, updated every frame
+         by both the drag and the settle — a regrab mid-settle always
+         continues from here, never snaps back to the canonical target.
+       - Release velocity projects a momentum endpoint (Apple's WWDC formula)
+         and picks the nearest of the three snap points to it, so a fast
+         flick can skip a step and a slow drag doesn't over-commit.
+       - Dragging past the peek/full bounds rubber-bands instead of hard
+         clamping.
+       - Every sheet movement (drag-release, tap-cycle, select()'s
+         programmatic snap) funnels through one settle function, so it's
+         all driven by the same interruptible spring.
 
-  function setSnap(snap) {
-    el.sidebar.dataset.snap = snap;
+     DESIGN.md §6 specifies stiffness:100/damping:20 as its general spring
+     default, but simulating it showed a full peek<->full drag (~300-560px)
+     takes 0.7-1.35s to settle at those numbers — noticeably slower than the
+     sheet's old 0.4s CSS transition. Tuned up to stiffness:500 (damping kept
+     at the critically-damped ratio, c = 2*sqrt(k), so there's still zero
+     bounce on a plain release) settles in ~0.7s worst case / ~0.5s for a
+     typical partial drag, and stays numerically stable at the worst-case
+     clamped frame time below — verified by simulating settle time and
+     integrator stability before choosing these numbers. */
+  var SHEET_STIFFNESS = 500, SHEET_DAMPING = 2 * Math.sqrt(500), SHEET_MASS = 1;
+  var SHEET_REST_POS = 0.5, SHEET_REST_VEL = 0.5;   // px / px-per-second settle thresholds
+  var SHEET_DECEL = 0.998;                          // momentum projection decay
+  var SHEET_RUBBERBAND = 0.55;
+  var SHEET_PEEK = 148;
+  var SHEET_VELOCITY_WINDOW = 100;                  // ms of pointer history kept for release velocity
+
+  function sheetSpringStep(pos, vel, target, dt) {
+    var accel = (-SHEET_STIFFNESS * (pos - target) - SHEET_DAMPING * vel) / SHEET_MASS;
+    vel += accel * dt;
+    pos += vel * dt;
+    return [pos, vel];
   }
 
+  function sheetProject(v) { return (v / 1000) * SHEET_DECEL / (1 - SHEET_DECEL); }
+
+  function sheetRubberband(overshoot, dim, coeff) {
+    return (overshoot * dim * coeff) / (dim + coeff * overshoot);
+  }
+
+  function sheetSnapY(name) {
+    return { peek: el.sidebar.offsetHeight - SHEET_PEEK, half: el.sidebar.offsetHeight * 0.46, full: 0 }[name];
+  }
+
+  function sheetNearestSnap(y) {
+    var names = ['peek', 'half', 'full'], best = names[0], bestDist = Infinity;
+    for (var i = 0; i < names.length; i++) {
+      var d = Math.abs(sheetSnapY(names[i]) - y);
+      if (d < bestDist) { bestDist = d; best = names[i]; }
+    }
+    return best;
+  }
+
+  function startSheetSettle(snapName, velocity) {
+    var target = sheetSnapY(snapName);
+    STATE.sheet.target = target;
+    STATE.sheet.snapName = snapName;
+    STATE.sheet.v = velocity || 0;
+
+    if (STATE.sheet.raf != null) cancelAnimationFrame(STATE.sheet.raf);
+    var gen = ++STATE.sheet.gen;
+
+    if (reducedMotion()) {
+      el.sidebar.style.transform = '';
+      el.sidebar.dataset.snap = snapName;
+      STATE.sheet.y = target;
+      STATE.sheet.v = 0;
+      return;
+    }
+
+    el.sidebar.classList.add('is-settling');
+    var last = performance.now();
+
+    function step(now) {
+      if (gen !== STATE.sheet.gen) return;   // superseded by a newer drag/settle
+      var dt = Math.min((now - last) / 1000, 1 / 30);
+      last = now;
+      var r = sheetSpringStep(STATE.sheet.y, STATE.sheet.v, target, dt);
+      STATE.sheet.y = r[0];
+      STATE.sheet.v = r[1];
+
+      if (Math.abs(target - STATE.sheet.y) < SHEET_REST_POS && Math.abs(STATE.sheet.v) < SHEET_REST_VEL) {
+        STATE.sheet.y = target;
+        STATE.sheet.v = 0;
+        el.sidebar.style.transform = '';
+        el.sidebar.dataset.snap = snapName;
+        el.sidebar.classList.remove('is-settling');
+        return;
+      }
+      el.sidebar.style.transform = 'translateY(' + STATE.sheet.y + 'px)';
+      STATE.sheet.raf = requestAnimationFrame(step);
+    }
+    STATE.sheet.raf = requestAnimationFrame(step);
+  }
+
+  function setSnap(snap) { startSheetSettle(snap, 0); }
+
   function initSheet() {
-    var startY = 0, startSnap = 'half', dragging = false, moved = 0;
-    var order = ['peek', 'half', 'full'];
+    STATE.sheet.y = STATE.sheet.target = sheetSnapY(STATE.sheet.snapName);
+
+    var dragging = false, startClientY = 0, baseY = 0, moved = 0, history = [];
 
     function onDown(e) {
       if (!isMobile()) return;
+      if (STATE.sheet.raf != null) cancelAnimationFrame(STATE.sheet.raf);
+      STATE.sheet.gen++;   // supersede any in-flight settle
+      el.sidebar.classList.remove('is-settling');
       dragging = true;
       moved = 0;
-      startY = e.clientY;
-      startSnap = el.sidebar.dataset.snap || 'half';
+      startClientY = e.clientY;
+      baseY = STATE.sheet.y;   // the live presentation value — never the canonical snap position
+      history = [{ t: e.timeStamp, y: baseY }];
       el.sidebar.classList.add('is-dragging');
       el.grab.setPointerCapture(e.pointerId);
     }
 
     function onMove(e) {
       if (!dragging) return;
-      moved = e.clientY - startY;
-      var base = { peek: el.sidebar.offsetHeight - 148, half: el.sidebar.offsetHeight * 0.46, full: 0 }[startSnap];
-      var y = Math.max(0, Math.min(el.sidebar.offsetHeight - 148, base + moved));
+      moved = e.clientY - startClientY;
+      var min = 0, max = el.sidebar.offsetHeight - SHEET_PEEK;
+      var candidate = baseY + moved;
+
+      var y;
+      if (candidate < min) {
+        y = min - sheetRubberband(min - candidate, el.sidebar.offsetHeight, SHEET_RUBBERBAND);
+      } else if (candidate > max) {
+        y = max + sheetRubberband(candidate - max, el.sidebar.offsetHeight, SHEET_RUBBERBAND);
+      } else {
+        y = candidate;
+      }
+
+      STATE.sheet.y = y;
       el.sidebar.style.transform = 'translateY(' + y + 'px)';
+
+      history.push({ t: e.timeStamp, y: y });
+      while (history.length > 1 && e.timeStamp - history[0].t > SHEET_VELOCITY_WINDOW) history.shift();
     }
 
     function onUp(e) {
       if (!dragging) return;
       dragging = false;
       el.sidebar.classList.remove('is-dragging');
-      el.sidebar.style.transform = '';
-      var i = order.indexOf(startSnap);
-      if (moved < -40) i = Math.min(i + 1, 2);
-      else if (moved > 40) i = Math.max(i - 1, 0);
-      setSnap(order[i]);
+
+      var first = history[0], last = history[history.length - 1];
+      var dtSec = (last.t - first.t) / 1000;
+      var v = dtSec > 0.005 ? (last.y - first.y) / dtSec : 0;
+      var projectedY = STATE.sheet.y + sheetProject(v);
+      var targetName = sheetNearestSnap(projectedY);
+
+      startSheetSettle(targetName, v);
+
       if (e.pointerId != null) {
         try { el.grab.releasePointerCapture(e.pointerId); } catch (err) { /* already gone */ }
       }
@@ -779,7 +902,8 @@
     el.grab.addEventListener('pointercancel', onUp);
     el.grab.addEventListener('click', function () {
       if (Math.abs(moved) > 6) return;   // that was a drag, not a tap
-      var i = order.indexOf(el.sidebar.dataset.snap || 'half');
+      var order = ['peek', 'half', 'full'];
+      var i = order.indexOf(STATE.sheet.snapName);
       setSnap(order[i === 2 ? 0 : i + 1]);
     });
   }

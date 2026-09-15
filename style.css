@@ -235,7 +235,7 @@ button { font: inherit; color: inherit; }
   border-radius: 0;
   box-shadow: var(--shadow-lg);
   overflow: hidden;
-  transition: transform 0.25s var(--ease);
+  transition: transform 0.25s var(--spring);
 }
 
 .sidebar.is-collapsed { transform: translateX(-100%); }
@@ -262,7 +262,7 @@ button { font: inherit; color: inherit; }
   color: var(--text2);
   cursor: pointer;
   box-shadow: var(--shadow);
-  transition: left 0.25s var(--ease), background 0.15s var(--ease), color 0.15s var(--ease);
+  transition: left 0.25s var(--spring), background 0.15s var(--ease), color 0.15s var(--ease);
 }
 .sidebar-toggle:hover { background: var(--surface-alt); color: var(--text); }
 .sidebar-toggle .icon { width: 18px; height: 18px; transition: transform 0.25s var(--ease); }
@@ -912,7 +912,8 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
 
   .sidebar[data-snap="half"] { transform: translateY(46%); }
   .sidebar[data-snap="full"] { transform: translateY(0); }
-  .sidebar.is-dragging { transition: none; }
+  .sidebar.is-dragging,
+  .sidebar.is-settling { transition: none; }
   .sidebar.is-collapsed { transform: translateY(calc(100% - var(--peek, 148px))); }
 
   .sidebar-toggle { display: none; }

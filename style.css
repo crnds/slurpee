@@ -247,7 +247,7 @@ button { font: inherit; color: inherit; }
    layout, so no map resize/invalidateSize is ever needed. */
 .sidebar-toggle {
   position: absolute;
-  top: 50%;
+  bottom: var(--gutter);
   left: var(--sidebar-w);
   z-index: 601;
   display: grid;
@@ -262,7 +262,6 @@ button { font: inherit; color: inherit; }
   color: var(--text2);
   cursor: pointer;
   box-shadow: var(--shadow);
-  transform: translateY(-50%);
   transition: left 0.25s var(--ease), background 0.15s var(--ease), color 0.15s var(--ease);
 }
 .sidebar-toggle:hover { background: var(--surface-alt); color: var(--text); }

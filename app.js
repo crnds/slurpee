@@ -599,7 +599,11 @@
 
     return '<button type="button" class="detail-back" id="detail-back">' +
       svgIcon('chevron-left') + esc(t('allBranches')) + '</button>' +
-      '<h2 class="th">' + esc(s.name) + '</h2>' +
+      '<h2 class="detail-title th">' +
+      '<span class="detail-cup-badge" style="border-color:' + CUP_HEX[s.cup] + '">' +
+        '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
+      '</span>' +
+      esc(s.name) + '</h2>' +
       '<p class="detail-sub"><span class="code">' + s.code + '</span>' +
       (s.listName ? ' &middot; <span class="th">' + esc(s.listName) + '</span>' : '') +
       (s.dist != null ? ' &middot; <span class="dist">' + esc(t('away').replace('{dist}', fmtKm(s.dist))) + '</span>' : '') +

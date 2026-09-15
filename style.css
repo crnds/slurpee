@@ -592,6 +592,26 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   letter-spacing: -0.01em;
 }
 
+.detail-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.detail-cup-badge {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid; /* border-color set inline to the cup's own hue */
+  box-shadow: 0 1px 3px rgba(27, 32, 41, 0.3);
+}
+
 .detail-sub { margin: 0 0 0.875rem; font-size: 0.8125rem; color: var(--text2); }
 
 .detail-row {

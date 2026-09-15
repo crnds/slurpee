@@ -88,6 +88,7 @@
     markers: {},        // code -> L.Marker (divIcon pins, zoom >= PIN_MIN_ZOOM)
     dots: {},           // code -> L.CircleMarker (canvas, zoom < PIN_MIN_ZOOM)
     dotRenderer: null,  // shared L.canvas renderer for the dots
+    onMap: {},          // code -> layer currently added to STATE.pins
     selected: null,
     layer: 'frost',
     basemapMissing: false,
@@ -320,7 +321,8 @@
                              (or near) the viewport; re-culled on moveend.
 
      Markers and dots are built lazily and cached in STATE.markers/STATE.dots,
-     so panning or zooming back costs nothing. Colours mirror .pin in
+     and updates are differential — panning only adds pins that entered and
+     removes pins that left, never rebuilds the set. Colours mirror .pin in
      style.css (Slurpee Red border, Cup White fill, Melted Gray when
      unconfirmed). */
   function makeDot(s) {
@@ -341,21 +343,36 @@
 
   function renderMarkers() {
     if (!STATE.map) return;
-    STATE.pins.clearLayers();
     var bounds = STATE.map.getBounds().pad(0.15);
     var dotsOnly = STATE.map.getZoom() < PIN_MIN_ZOOM;
+
+    var want = {};
     for (var i = 0; i < STATE.filtered.length; i++) {
       var s = STATE.filtered[i];
-      if (!bounds.contains([s.lat, s.lng])) continue;
-      if (dotsOnly) {
-        var d = STATE.dots[s.code];
-        if (!d) { d = makeDot(s); STATE.dots[s.code] = d; }
-        STATE.pins.addLayer(d);
-      } else {
-        var m = STATE.markers[s.code];
-        if (!m) { m = makeMarker(s); STATE.markers[s.code] = m; }
-        STATE.pins.addLayer(m);
+      if (bounds.contains([s.lat, s.lng])) want[s.code] = s;
+    }
+
+    var code, cur;
+    for (code in STATE.onMap) {
+      cur = STATE.onMap[code];
+      // keep the selected pin whatever the zoom — it is the feedback layer
+      if (STATE.selected && STATE.selected.code === code) continue;
+      if (!want[code] || ((cur instanceof L.CircleMarker) !== dotsOnly)) {
+        STATE.pins.removeLayer(cur);
+        delete STATE.onMap[code];
       }
+    }
+    for (code in want) {
+      if (STATE.onMap[code]) continue;
+      if (dotsOnly) {
+        cur = STATE.dots[code];
+        if (!cur) { cur = makeDot(want[code]); STATE.dots[code] = cur; }
+      } else {
+        cur = STATE.markers[code];
+        if (!cur) { cur = makeMarker(want[code]); STATE.markers[code] = cur; }
+      }
+      STATE.pins.addLayer(cur);
+      STATE.onMap[code] = cur;
     }
   }
 
@@ -486,11 +503,16 @@
     if (STATE.selected) refreshMarkerIcon(STATE.selected, false);
     STATE.selected = s;
 
-    // The pin may be culled (offscreen) when the pick came from the list —
-    // make sure it exists and is on the map before styling it active.
+    // The pin may be culled (offscreen) or the store may be showing as a
+    // canvas dot at this zoom — make sure the real pin is on the map before
+    // styling it active.
     var m = STATE.markers[s.code];
     if (!m) { m = makeMarker(s); STATE.markers[s.code] = m; }
-    if (!STATE.pins.hasLayer(m)) STATE.pins.addLayer(m);
+    if (STATE.onMap[s.code] !== m) {
+      if (STATE.onMap[s.code]) STATE.pins.removeLayer(STATE.onMap[s.code]);
+      STATE.pins.addLayer(m);
+      STATE.onMap[s.code] = m;
+    }
     refreshMarkerIcon(s, true);
 
     el.detailScroll.innerHTML = detailHtml(s);

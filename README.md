@@ -4,7 +4,8 @@
 
 Every 7-Eleven branch in Thailand that sells Slurpee, on an interactive map.
 **2,655 branches** across 77 provinces, 2,404 of them confirmed Slurpee sellers
-by 7-Eleven's own store directory.
+by 7-Eleven's own store directory. Bilingual EN/TH interface — branch names and
+addresses are already Thai; the switch translates the chrome around them.
 
 No build step, no package manager, no framework — plain HTML, CSS and
 JavaScript. **No third-party services at runtime**: the basemap, the store
@@ -96,5 +97,5 @@ Store details from 7-Eleven Thailand's public store directory.
 
 Bundled: [Leaflet](https://leafletjs.com) (BSD-2-Clause),
 [protomaps-leaflet](https://github.com/protomaps/protomaps-leaflet)
-(BSD-3-Clause), [three.js](https://threejs.org) (MIT). Fonts — Fredoka, Outfit,
-Geist Mono and IBM Plex Sans Thai — are SIL Open Font License 1.1.
+(BSD-3-Clause), [three.js](https://threejs.org) (MIT). Fonts — Chango, Itim, Fredoka,
+Outfit, Geist Mono and IBM Plex Sans Thai — are SIL Open Font License 1.1.

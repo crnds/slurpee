@@ -17,8 +17,110 @@
   var PIN_MIN_ZOOM = 11;       // below this, branches draw as canvas dots
   var STORAGE = {
     province: 'slurpee_v1_province',
-    confirmed: 'slurpee_v1_confirmedonly'
+    confirmed: 'slurpee_v1_confirmedonly',
+    lang: 'slurpee_v1_lang'
   };
+
+  /* UI chrome only — never the data. Branch names, addresses and product
+     labels are already authentically Thai (real 7-Eleven directory text) and
+     stay exactly as they are regardless of this switch; only the interface
+     copy around them changes. The sidebar logotype additionally swaps its
+     font, Chango (`--font-display-en`) for Itim (`--font-display-th`), via
+     the `.th` class — see DESIGN.md §3. */
+  var STRINGS = {
+    en: {
+      title: 'Slurpee Map Thailand — every 7-Eleven serving Slurpee',
+      description: 'An interactive OpenStreetMap of every 7-Eleven branch in Thailand that serves Slurpee.',
+      heroMain: 'Slurpee Map',
+      heroSub: 'Thailand',
+      searchPlaceholder: 'Where’s your nearest Slurpee?',
+      searchAria: 'Search by branch name, code or address',
+      searchClear: 'Clear search',
+      grabAria: 'Expand or collapse the panel',
+      province: 'Province',
+      allThailand: 'All of Thailand',
+      confirmedOnly: 'Confirmed machines only',
+      findFreeze: 'Find my freeze',
+      finding: 'Finding you...',
+      zoomIn: 'Zoom in',
+      zoomOut: 'Zoom out',
+      loaderCopy: 'Pouring the map…',
+      basemapNotice: 'The map background is served in byte ranges, which this page ' +
+        'was not opened over. Run <code>python3 serve.py</code> in the slurpee ' +
+        'folder and open <code>localhost:8080</code>, or use the deployed ' +
+        'site. Branches and search work either way.',
+      branch: 'branch',
+      branches: 'branches',
+      tagYes: 'Slurpee',
+      tagNo: 'Unconfirmed',
+      emptyTitle: 'Brain freeze drought',
+      emptyBody: 'Nothing matches that. Try a wider search.',
+      clearFilters: 'Clear the filters',
+      listEnd: 'Showing {shown} of {total} — zoom the map or narrow your search.',
+      allBranches: 'All branches',
+      away: '{dist} away',
+      directions: 'Directions',
+      alsoInStore: 'Also in store',
+      confirmedMsg: 'Slurpee machine confirmed by the 7-Eleven store directory.',
+      unconfirmedMsg: 'This branch is on the Slurpee list, but the store directory does not currently confirm a machine.',
+      geoUnsupported: 'This browser will not share a location.',
+      geoDenied: 'Machine’s napping — location access was blocked.',
+      geoFail: 'Could not pin you down. Try again, or search by province.',
+      geoUnavailable: 'Location is unavailable here.',
+      dataMissing: 'Store data is missing. Run "python3 fetch_stores.py" to build data/stores.js, then reload.',
+      napping: 'Machine’s napping',
+      yourLocation: 'Your location'
+    },
+    th: {
+      title: 'แผนที่สลัร์ปี้ ทั่วไทย — 7-Eleven ทุกสาขาที่มีสลัร์ปี้',
+      description: 'แผนที่แบบอินเทอร์แอกทีฟของทุกสาขา 7-Eleven ในประเทศไทยที่มีเครื่องสลัร์ปี้',
+      heroMain: 'แผนที่สลัร์ปี้',
+      heroSub: 'ประเทศไทย',
+      searchPlaceholder: 'ร้านสลัร์ปี้ใกล้คุณอยู่ไหน?',
+      searchAria: 'ค้นหาด้วยชื่อสาขา รหัส หรือที่อยู่',
+      searchClear: 'ล้างการค้นหา',
+      grabAria: 'ขยายหรือย่อแผงข้อมูล',
+      province: 'จังหวัด',
+      allThailand: 'ทั่วประเทศไทย',
+      confirmedOnly: 'เฉพาะเครื่องที่ยืนยันแล้ว',
+      findFreeze: 'หาสลัร์ปี้ใกล้ฉัน',
+      finding: 'กำลังค้นหาคุณ...',
+      zoomIn: 'ซูมเข้า',
+      zoomOut: 'ซูมออก',
+      loaderCopy: 'กำลังเทแผนที่…',
+      basemapNotice: 'แผนที่พื้นหลังถูกส่งแบบ byte range ซึ่งหน้านี้ไม่ได้เปิดผ่านวิธีนั้น ' +
+        'รันคำสั่ง <code>python3 serve.py</code> ในโฟลเดอร์ slurpee ' +
+        'แล้วเปิด <code>localhost:8080</code> หรือใช้เว็บไซต์จริงที่เผยแพร่แล้ว ' +
+        'การค้นหาและรายชื่อสาขายังใช้งานได้ปกติทั้งสองแบบ',
+      branch: 'สาขา',
+      branches: 'สาขา',
+      tagYes: 'มีสลัร์ปี้',
+      tagNo: 'ยังไม่ยืนยัน',
+      emptyTitle: 'แล้งสลัร์ปี้',
+      emptyBody: 'ไม่พบรายการที่ตรงกัน ลองขยายการค้นหาดูสิ',
+      clearFilters: 'ล้างตัวกรอง',
+      listEnd: 'แสดง {shown} จาก {total} สาขา — ลองซูมแผนที่หรือค้นหาให้แคบลง',
+      allBranches: 'สาขาทั้งหมด',
+      away: 'ห่าง {dist}',
+      directions: 'นำทาง',
+      alsoInStore: 'สินค้าอื่นในร้าน',
+      confirmedMsg: 'เครื่องสลัร์ปี้ได้รับการยืนยันจากไดเรกทอรี่ร้าน 7-Eleven',
+      unconfirmedMsg: 'สาขานี้อยู่ในรายชื่อสลัร์ปี้ แต่ไดเรกทอรี่ร้านยังไม่ยืนยันว่ามีเครื่อง',
+      geoUnsupported: 'เบราว์เซอร์นี้ไม่รองรับการแชร์ตำแหน่ง',
+      geoDenied: 'เครื่องงีบอยู่ — การเข้าถึงตำแหน่งถูกบล็อก',
+      geoFail: 'หาตำแหน่งคุณไม่เจอ ลองใหม่อีกครั้ง หรือค้นหาด้วยจังหวัด',
+      geoUnavailable: 'ตำแหน่งไม่พร้อมใช้งานที่นี่',
+      dataMissing: 'ไม่พบข้อมูลร้านค้า รันคำสั่ง "python3 fetch_stores.py" เพื่อสร้าง data/stores.js แล้วโหลดหน้าใหม่',
+      napping: 'เครื่องงีบอยู่',
+      yourLocation: 'ตำแหน่งของคุณ'
+    }
+  };
+
+  function t(key) {
+    return (STRINGS[STATE.lang] && STRINGS[STATE.lang][key] != null)
+      ? STRINGS[STATE.lang][key]
+      : STRINGS.en[key];
+  }
 
   var OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
@@ -60,14 +162,15 @@
 
   var TILE_FLAVOR = 'white';   // pale, so the pins carry the colour
 
-  /* Product categories that earn a Flavor Swirl dot on the pin base.
-     DESIGN.md reserves this palette for pins and tags only. */
+  /* Product categories that earn a Cup Trio dot on the pin base. Five swatches
+     laddered out of the three brand hues; DESIGN.md §2 reserves them for pins
+     and product pills only. */
   var DOTS = [
-    ['AC', 'var(--cola)'],        // All Café
-    ['KS', 'var(--raspberry)'],   // Kudsan
-    ['BS', 'var(--strawberry)'],  // bakery
-    ['VF', 'var(--apple)'],       // fresh produce
-    ['FP', 'var(--mango)']        // Food Place
+    ['AC', 'var(--blue-ink)'],     // All Café
+    ['KS', 'var(--accent-deep)'],  // Kudsan
+    ['BS', 'var(--accent)'],       // bakery
+    ['VF', 'var(--lime)'],         // fresh produce
+    ['FP', 'var(--blue)']          // Food Place
   ];
 
   /* One cup art asset per branch, assigned by hashing the store code so it
@@ -95,6 +198,7 @@
     province: '',
     query: '',
     confirmedOnly: false,
+    lang: 'en',
     userPos: null,
     map: null,
     pins: null,
@@ -331,15 +435,17 @@
 
      Markers and dots are built lazily and cached in STATE.markers/STATE.dots,
      and updates are differential — panning only adds pins that entered and
-     removes pins that left, never rebuilds the set. Colours mirror .pin in
-     style.css (Slurpee Red border, Cup White fill, Melted Gray when
-     unconfirmed). */
+     removes pins that left, never rebuilds the set. The ring encodes
+     availability, so it is the lime family per DESIGN.md §2 — --lime-ink
+     rather than raw --lime, because a 2px ring at 1.9:1 vanishes on the pale
+     basemap. Melted Gray when unconfirmed. Hard-coded because the canvas
+     renderer cannot resolve CSS custom properties. */
   function makeDot(s) {
     if (!STATE.dotRenderer) STATE.dotRenderer = L.canvas({ padding: 0.4 });
     var d = L.circleMarker([s.lat, s.lng], {
       renderer: STATE.dotRenderer,
       radius: 5,
-      color: s.sp ? '#E8402A' : '#5C6B7A',
+      color: s.sp ? '#5C7A0D' : '#8B929C',
       weight: 2,
       fillColor: '#FFFFFF',
       fillOpacity: 1,
@@ -390,13 +496,13 @@
   function renderCount() {
     var n = STATE.filtered.length;
     el.count.textContent = fmtCount(n);
-    el.countLabel.textContent = n === 1 ? 'branch' : 'branches';
+    el.countLabel.textContent = n === 1 ? t('branch') : t('branches');
   }
 
   function rowHtml(s, i) {
     var tag = s.sp
-      ? '<span class="tag tag-yes">' + svgIcon('check') + 'Slurpee</span>'
-      : '<span class="tag tag-no">' + svgIcon('alert') + 'Unconfirmed</span>';
+      ? '<span class="tag tag-yes">' + svgIcon('check') + t('tagYes') + '</span>'
+      : '<span class="tag tag-no">' + svgIcon('alert') + t('tagNo') + '</span>';
     var place = esc(s.district + (s.province && s.district !== s.province ? ', ' + s.province : s.province));
     return '<button type="button" class="result" data-code="' + s.code + '" ' +
       'style="animation-delay:' + Math.min(i * 40, 600) + 'ms">' +
@@ -416,16 +522,16 @@
     var cup =
       '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">' +
       '<path d="M7 9 C7 5.5 9.5 4 12 4 C14.5 4 17 5.5 17 9" stroke="var(--text2)" stroke-width="1.4" stroke-linecap="round"/>' +
-      '<path d="M7 9 L8.6 20 H15.4 L17 9 Z" fill="rgba(61,139,253,.10)" stroke="var(--text2)" stroke-width="1.4" stroke-linejoin="round"/>' +
+      '<path d="M7 9 L8.6 20 H15.4 L17 9 Z" fill="rgba(15,164,226,.10)" stroke="var(--text2)" stroke-width="1.4" stroke-linejoin="round"/>' +
       '<path d="M13.5 6.5 L15.5 2.5" stroke="var(--accent)" stroke-width="1.4" stroke-linecap="round"/>' +
-      '<circle cx="10.2" cy="13" r="1.1" fill="var(--strawberry)"/>' +
-      '<circle cx="13.6" cy="15" r="1.1" fill="var(--mango)"/>' +
-      '<circle cx="11.6" cy="17.4" r="1" fill="var(--apple)"/>' +
+      '<circle cx="10.2" cy="13" r="1.1" fill="var(--accent)"/>' +
+      '<circle cx="13.6" cy="15" r="1.1" fill="var(--blue)"/>' +
+      '<circle cx="11.6" cy="17.4" r="1" fill="var(--lime)"/>' +
       '</svg>';
     return '<div class="empty">' + cup +
-      '<h2>Brain freeze drought</h2>' +
-      '<p>Nothing matches that. Try a wider search.</p>' +
-      '<button type="button" class="btn btn-secondary" id="reset-btn">Clear the filters</button>' +
+      '<h2 class="' + (STATE.lang === 'th' ? 'th' : '') + '">' + esc(t('emptyTitle')) + '</h2>' +
+      '<p>' + esc(t('emptyBody')) + '</p>' +
+      '<button type="button" class="btn btn-secondary" id="reset-btn">' + esc(t('clearFilters')) + '</button>' +
       '</div>';
   }
 
@@ -441,8 +547,9 @@
     var shown = list.slice(0, LIST_LIMIT);
     var tail = '';
     if (list.length > LIST_LIMIT) {
-      tail = '<p class="list-end">Showing ' + fmtCount(LIST_LIMIT) + ' of ' +
-        fmtCount(list.length) + ' &mdash; zoom the map or narrow your search.</p>';
+      tail = '<p class="list-end">' + esc(t('listEnd')
+        .replace('{shown}', fmtCount(LIST_LIMIT))
+        .replace('{total}', fmtCount(list.length))) + '</p>';
     }
 
     // First screenful synchronously, the rest on idle — one innerHTML with
@@ -475,36 +582,37 @@
     }
 
     rows += '<div class="detail-row">' + svgIcon(s.sp ? 'check' : 'alert') +
-      '<span>' + (s.sp
-        ? 'Slurpee machine confirmed by the 7-Eleven store directory.'
-        : 'This branch is on the Slurpee list, but the store directory does not currently confirm a machine.') +
+      '<span>' + esc(s.sp ? t('confirmedMsg') : t('unconfirmedMsg')) +
       '</span></div>';
 
     var labels = (window.SLURPEE_STORES && window.SLURPEE_STORES.products) || {};
     var pills = s.products.filter(function (p) { return p !== 'SP' && labels[p]; })
       .map(function (p, i) {
-        var c = ['var(--raspberry)', 'var(--mango)', 'var(--apple)', 'var(--strawberry)', 'var(--cola)'][i % 5];
+        /* The tint carries the hue; the label stays Slush Ink. Raw --lime and
+           --blue are 1.9:1 and 2.8:1 on white — surface colours, never text
+           (DESIGN.md §2). */
+        var c = ['var(--blue-ink)', 'var(--accent-deep)', 'var(--accent)', 'var(--lime)', 'var(--blue)'][i % 5];
         return '<span class="pill th" style="background:color-mix(in srgb,' + c +
-          ' 8%, transparent);color:' + c + '">' + esc(labels[p]) + '</span>';
+          ' 14%, transparent);color:var(--text)">' + esc(labels[p]) + '</span>';
       }).join('');
 
     if (pills) {
       rows += '<div class="detail-row">' + svgIcon('store') +
-        '<span>Also in store<span class="pills">' + pills + '</span></span></div>';
+        '<span>' + esc(t('alsoInStore')) + '<span class="pills">' + pills + '</span></span></div>';
     }
 
     return '<button type="button" class="detail-back" id="detail-back">' +
-      svgIcon('chevron-left') + 'All branches</button>' +
+      svgIcon('chevron-left') + esc(t('allBranches')) + '</button>' +
       '<h2 class="th">' + esc(s.name) + '</h2>' +
       '<p class="detail-sub"><span class="code">' + s.code + '</span>' +
       (s.listName ? ' &middot; <span class="th">' + esc(s.listName) + '</span>' : '') +
-      (s.dist != null ? ' &middot; <span class="dist">' + fmtKm(s.dist) + ' away</span>' : '') +
+      (s.dist != null ? ' &middot; <span class="dist">' + esc(t('away').replace('{dist}', fmtKm(s.dist))) + '</span>' : '') +
       '</p>' +
       rows +
       '<div class="detail-actions">' +
       '<a class="btn btn-primary" target="_blank" rel="noopener" ' +
       'href="https://www.google.com/maps/search/?api=1&query=' + s.lat + ',' + s.lng + '">' +
-      svgIcon('directions') + 'Directions</a>' +
+      svgIcon('directions') + esc(t('directions')) + '</a>' +
       '</div>';
   }
 
@@ -561,15 +669,15 @@
     el.geoError.hidden = true;
 
     if (!navigator.geolocation) {
-      showGeoError('This browser will not share a location.');
+      showGeoError(t('geoUnsupported'));
       return;
     }
 
-    el.locateLabel.textContent = 'Finding you...';
+    el.locateLabel.textContent = t('finding');
     el.locateBtn.disabled = true;
 
     function done() {
-      el.locateLabel.textContent = 'Find my freeze';
+      el.locateLabel.textContent = t('findFreeze');
       el.locateBtn.disabled = false;
     }
 
@@ -587,7 +695,7 @@
         STATE.meMarker = L.marker([lat, lng], {
           icon: L.divIcon({ className: 'me-icon', html: '<div class="me"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }),
           zIndexOffset: 1000,
-          alt: 'Your location'
+          alt: t('yourLocation')
         }).addTo(STATE.map);
 
         applyFilters();
@@ -595,13 +703,11 @@
         el.sidebarScroll.scrollTop = 0;
       }, function (err) {
         done();
-        showGeoError(err.code === 1
-          ? 'Machine’s napping — location access was blocked.'
-          : 'Could not pin you down. Try again, or search by province.');
+        showGeoError(err.code === 1 ? t('geoDenied') : t('geoFail'));
       }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
     } catch (e) {
       done();
-      showGeoError('Location is unavailable here.');
+      showGeoError(t('geoUnavailable'));
     }
   }
 
@@ -668,7 +774,7 @@
     var names = Object.keys(counts).sort(function (a, b) {
       return a.localeCompare(b, 'th');
     });
-    var html = '<option value="">All of Thailand (' + fmtCount(STATE.all.length) + ')</option>';
+    var html = '<option value="">' + esc(t('allThailand')) + ' (' + fmtCount(STATE.all.length) + ')</option>';
     names.forEach(function (n) {
       html += '<option value="' + esc(n) + '">' + esc(n) + ' (' + fmtCount(counts[n]) + ')</option>';
     });
@@ -707,6 +813,63 @@
         el.confirmedOnly.checked = true;
       }
     } catch (e) { /* ignore */ }
+  }
+
+  // ── LANGUAGE ────────────────────────────────────────────────────────────
+  // UI chrome only — see the STRINGS comment above. Branch data never
+  // re-translates, so switching just re-runs the same render functions the
+  // filters already use; nothing here needs its own data path.
+
+  function restoreLang() {
+    try {
+      var l = localStorage.getItem(STORAGE.lang);
+      if (l === 'en' || l === 'th') STATE.lang = l;
+    } catch (e) { /* private mode */ }
+  }
+
+  function applyStaticStrings() {
+    document.title = t('title');
+    var desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute('content', t('description'));
+
+    var isTh = STATE.lang === 'th';
+    document.documentElement.lang = STATE.lang;
+    el.heroTitle.classList.toggle('th', isTh);
+    el.heroTitleMain.textContent = t('heroMain');
+    el.heroTitleSub.textContent = t('heroSub');
+
+    el.search.placeholder = t('searchPlaceholder');
+    el.search.setAttribute('aria-label', t('searchAria'));
+    el.searchClear.setAttribute('aria-label', t('searchClear'));
+    el.grab.setAttribute('aria-label', t('grabAria'));
+    el.provinceLabel.textContent = t('province');
+    el.confirmedLabel.textContent = t('confirmedOnly');
+    if (!el.locateBtn.disabled) el.locateLabel.textContent = t('findFreeze');
+    el.zoomIn.setAttribute('aria-label', t('zoomIn'));
+    el.zoomOut.setAttribute('aria-label', t('zoomOut'));
+    el.loaderCopy.textContent = t('loaderCopy');
+    el.basemapNoticeText.innerHTML = t('basemapNotice');
+
+    el.langEn.setAttribute('aria-pressed', isTh ? 'false' : 'true');
+    el.langTh.setAttribute('aria-pressed', isTh ? 'true' : 'false');
+  }
+
+  function setLang(lang) {
+    if (lang === STATE.lang) return;
+    STATE.lang = lang;
+    try { localStorage.setItem(STORAGE.lang, lang); } catch (e) { /* private mode */ }
+
+    applyStaticStrings();
+
+    // Province names are real Thai place names and never translate, but the
+    // "All of Thailand" option and the selection need to survive a rebuild.
+    var current = STATE.province;
+    buildProvinceSelect();
+    el.province.value = current;
+
+    renderList();
+    renderCount();
+    if (STATE.selected) el.detailScroll.innerHTML = detailHtml(STATE.selected);
   }
 
   // ── WIRING ──────────────────────────────────────────────────────────────
@@ -762,6 +925,9 @@
     el.zoomIn.addEventListener('click', function () { STATE.map.zoomIn(); });
     el.zoomOut.addEventListener('click', function () { STATE.map.zoomOut(); });
 
+    el.langEn.addEventListener('click', function () { setLang('en'); });
+    el.langTh.addEventListener('click', function () { setLang('th'); });
+
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !el.detail.hidden) closeDetail();
       if (e.key === '/' && document.activeElement !== el.search) {
@@ -778,7 +944,7 @@
     if (!loader) return;
     loader.innerHTML = '<div class="loader-card">' +
       '<svg class="icon loader-cup" aria-hidden="true"><use href="#icon-alert"></use></svg>' +
-      '<p class="loader-copy">Machine’s napping</p>' +
+      '<p class="loader-copy">' + esc(t('napping')) + '</p>' +
       '<p style="margin:0;font-size:.875rem;color:var(--text2)">' + esc(msg) + '</p></div>';
   }
 
@@ -803,12 +969,24 @@
       zoomIn: document.getElementById('zoom-in'),
       zoomOut: document.getElementById('zoom-out'),
       basemapNotice: document.getElementById('basemap-notice'),
-      loader: document.getElementById('loader')
+      basemapNoticeText: document.getElementById('basemap-notice-text'),
+      loader: document.getElementById('loader'),
+      loaderCopy: document.getElementById('loader-copy'),
+      heroTitle: document.getElementById('hero-title'),
+      heroTitleMain: document.getElementById('hero-title-main'),
+      heroTitleSub: document.getElementById('hero-title-sub'),
+      provinceLabel: document.getElementById('province-label'),
+      confirmedLabel: document.getElementById('confirmed-label'),
+      langEn: document.getElementById('lang-en'),
+      langTh: document.getElementById('lang-th')
     };
+
+    restoreLang();
+    applyStaticStrings();
 
     var raw = window.SLURPEE_STORES;
     if (!raw || !raw.stores || !raw.stores.length) {
-      fail('Store data is missing. Run "python3 fetch_stores.py" to build data/stores.js, then reload.');
+      fail(t('dataMissing'));
       return;
     }
 

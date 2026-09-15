@@ -1,6 +1,6 @@
 /* ══════════════════════════════════════════════════════════════════════════
    hero.js — the one three.js flourish (DESIGN.md §6 "perpetual micro-life")
-   A low-poly translucent cup with a slowly swirling slush of Flavor Swirl
+   A low-poly translucent cup with a slowly swirling slush of Cup Trio
    particles. Decorative only: index.html lazy-loads three.js and this file
    after window load at idle, then calls window.SLURPEE_HERO(). It never
    blocks first paint, and bows out entirely for reduced-motion or missing
@@ -14,7 +14,7 @@
   var MOBILE = window.matchMedia &&
     window.matchMedia('(max-width: 768px)').matches;
   var MAX_DPR = MOBILE ? 1.5 : 2;
-  var COLORS = [0x3E2C23, 0x3D8BFD, 0x5FBF4A, 0xF2768F, 0xF5A623];  // cola/raspberry/apple/strawberry/mango
+  var COLORS = [0x0A6E99, 0xD6008A, 0xFF009E, 0x99C915, 0x0FA4E2];  // the Cup Trio ladder, per DESIGN.md §2
   var PARTICLES = MOBILE ? 140 : 260;
 
   function reducedMotion() {
@@ -64,7 +64,7 @@
     var key = new THREE.DirectionalLight(0xffffff, 1.8);
     key.position.set(2, 3, 4);
     scene.add(key);
-    var rim = new THREE.DirectionalLight(0x3D8BFD, 0.9);
+    var rim = new THREE.DirectionalLight(0x0FA4E2, 0.9);
     rim.position.set(-3, 1, -2);
     scene.add(rim);
 
@@ -100,10 +100,10 @@
     lid.position.y = 1.25;
     cup.add(lid);
 
-    // straw, in Slurpee Red — the accent's one appearance here
+    // straw, in Shock Pink — the accent's one appearance here
     var straw = new THREE.Mesh(
       new THREE.CylinderGeometry(0.11, 0.11, 3.5, 12),
-      new THREE.MeshStandardMaterial({ color: 0xE8402A, roughness: 0.45 })
+      new THREE.MeshStandardMaterial({ color: 0xFF009E, roughness: 0.45 })
     );
     straw.position.set(0.34, 1.0, 0.14);
     straw.rotation.z = -0.32;

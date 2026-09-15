@@ -1,44 +1,53 @@
 /* ══════════════════════════════════════════════════════════════════════════
    Slurpee Map Thailand
    Visual system per DESIGN.md — "brain-freeze joy, engineered".
-   Ice base carries 90% of the UI; Slurpee Red is rationed to ~3 hits a screen;
-   the Flavor Swirl palette is quarantined to pins and product tags.
+   The ice base carries ~88% of the UI. The Cup Trio (S pink / M lime / L blue)
+   is the whole accent layer, split 60/20/20 among themselves — pink is
+   interactive, lime means open, blue means data. There is no fourth hue.
    ══════════════════════════════════════════════════════════════════════════ */
 
 :root {
-  /* Ice base */
-  --bg: #F4F8FB;              /* Freezer Frost */
+  /* Ice base — neutral-cool, no blue cast (blue now means "data") */
+  --bg: #F5F6F8;              /* Freezer Frost */
   --surface: #FFFFFF;         /* Cup White */
-  --surface-alt: #EDF3F8;
-  --surface-deep: #E2ECF5;
-  --text: #1B2733;            /* Slush Ink */
-  --text2: #5C6B7A;           /* Melted Gray */
-  --muted: #8A98A6;
-  --border: rgba(27, 39, 51, 0.08);   /* Frost Line */
-  --border-strong: rgba(27, 39, 51, 0.16);
+  --surface-alt: #EEF0F3;
+  --surface-deep: #E3E7EC;
+  --text: #1B2029;            /* Slush Ink */
+  --text2: #606973;           /* Melted Gray */
+  --muted: #8B929C;
+  --border: rgba(27, 32, 41, 0.08);   /* Frost Line */
+  --border-strong: rgba(27, 32, 41, 0.16);
 
-  /* The one accent */
-  --accent: #E8402A;          /* Slurpee Red */
-  --accent-press: #D13320;
-  --accent-tint: rgba(232, 64, 42, 0.08);
+  /* S — Shock Pink: interactive, brand, "you did this". 60% of accent use. */
+  --accent: #FF009E;          /* brand hex — non-text surfaces only */
+  --accent-deep: #D6008A;     /* fill under white text (5.0:1) */
+  --accent-press: #B00072;
+  --accent-ink: #C4007A;      /* pink text on light (5.7:1) */
+  --accent-tint: color-mix(in srgb, var(--accent) 8%, transparent);
 
-  /* Flavor Swirl — pins, tags and status only */
-  --cola: #3E2C23;
-  --raspberry: #3D8BFD;
-  --apple: #5FBF4A;
-  --apple-ink: #3E8A2F;      /* darkened Green Apple, for text contrast */
-  --strawberry: #F2768F;
-  --mango: #F5A623;
+  /* M — Sour Lime: open / available / Slurpee confirmed. 20%. */
+  --lime: #99C915;
+  --lime-ink: #5C7A0D;        /* lime text on light (5.0:1) */
+
+  /* L — Deep Freeze Blue: map, data, distance, links, info. 20%. */
+  --blue: #0FA4E2;
+  --blue-ink: #0A6E99;        /* blue text on light (5.7:1) */
 
   --radius: 1.5rem;
   --radius-sm: 0.875rem;
   --radius-pill: 999px;
-  --shadow-ice: 0 8px 24px rgba(61, 139, 253, 0.08);
-  --shadow-ice-lg: 0 16px 48px rgba(61, 139, 253, 0.14);
+  --shadow: 0 8px 24px rgba(27, 32, 41, 0.07);
+  --shadow-lg: 0 16px 48px rgba(27, 32, 41, 0.12);
   --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --ease: cubic-bezier(0.4, 0, 0.2, 1);
 
   --font-display: 'Fredoka', 'IBM Plex Sans Thai', sans-serif;
+  /* English headers only — Chango is Latin-only, single-weight 400. Thai
+     headers use --font-display-th instead (DESIGN.md §3). */
+  --font-display-en: 'Chango', 'Fredoka', 'IBM Plex Sans Thai', sans-serif;
+  /* Thai headers — Itim is Chango's Thai counterpart: same poster job,
+     single weight 400, scoped to headers via the .th class below. */
+  --font-display-th: 'Itim', 'Fredoka', 'IBM Plex Sans Thai', sans-serif;
   --font-body: 'Outfit', 'IBM Plex Sans Thai', system-ui, sans-serif;
   --font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
@@ -107,7 +116,7 @@ button { font: inherit; color: inherit; }
   position: absolute;
   top: var(--gutter);
   left: calc(var(--gutter) * 2 + var(--sidebar-w));
-  right: calc(var(--gutter) + 56px);
+  right: calc(var(--gutter) + 96px);   /* clears the lang-switch pill (84px) */
   z-index: 500;
   display: flex;
   justify-content: flex-start;
@@ -125,13 +134,13 @@ button { font: inherit; color: inherit; }
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-ice);
+  box-shadow: var(--shadow);
   transition: box-shadow 0.2s var(--ease), border-color 0.2s var(--ease);
 }
 
 .search:focus-within {
   border-color: var(--accent);
-  box-shadow: var(--shadow-ice-lg);
+  box-shadow: var(--shadow-lg);
 }
 
 .search-icon { color: var(--accent); animation: wiggle 6s var(--ease) infinite; }
@@ -186,7 +195,7 @@ button { font: inherit; color: inherit; }
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-ice-lg);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
 }
 
@@ -225,18 +234,18 @@ button { font: inherit; color: inherit; }
 
 .sidebar-headings h1 {
   margin: 0;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.5rem;
-  line-height: 1.15;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display-en);
+  font-weight: 400;          /* Chango ships one weight; 600 would fake-bold it */
+  font-size: 1.375rem;       /* Chango runs heavier than Fredoka at equal size */
+  line-height: 1.2;
+  letter-spacing: 0;         /* negative tracking closes this face's counters */
 }
 
 .sidebar-headings h1 em {
   display: block;
   font-style: normal;
-  font-weight: 500;
-  font-size: 1.125rem;
+  font-weight: 400;
+  font-size: 1rem;
   color: var(--text2);
 }
 
@@ -323,11 +332,11 @@ button { font: inherit; color: inherit; }
   height: 20px;
   border-radius: 50%;
   background: var(--surface);
-  box-shadow: 0 1px 3px rgba(27, 39, 51, 0.25);
+  box-shadow: 0 1px 3px rgba(27, 32, 41, 0.25);
   transition: transform 0.25s var(--spring);
 }
 
-.toggle input:checked + .toggle-track { background: var(--apple); }
+.toggle input:checked + .toggle-track { background: var(--accent); }
 .toggle input:checked + .toggle-track .toggle-thumb { transform: translateX(18px); }
 .toggle input:focus-visible + .toggle-track { outline: 2px solid var(--accent); outline-offset: 2px; }
 
@@ -353,7 +362,9 @@ button { font: inherit; color: inherit; }
 
 .btn .icon { width: 20px; height: 20px; }
 
-.btn-primary { background: var(--accent); color: var(--surface); }
+/* Fill is --accent-deep, not the raw brand pink: white on #FF009E is only
+   3.65:1, which fails AA for a 15px label. DESIGN.md §2. */
+.btn-primary { background: var(--accent-deep); color: var(--surface); }
 .btn-primary:hover { background: var(--accent-press); }
 .btn-primary:active { transform: translateY(-1px); background: var(--accent-press); }
 
@@ -379,7 +390,7 @@ button { font: inherit; color: inherit; }
   gap: 0.5rem;
   margin: 0;
   font-size: 0.8125rem;
-  color: var(--accent);
+  color: var(--accent-ink);
 }
 .notice .icon { width: 18px; height: 18px; margin-top: 1px; }
 .notice--info { color: var(--text2); line-height: 1.55; }
@@ -462,8 +473,8 @@ button { font: inherit; color: inherit; }
   flex: none;
 }
 .tag .icon { width: 13px; height: 13px; }
-.tag-yes { background: rgba(95, 191, 74, 0.12); color: var(--apple-ink); }
-.tag-no { background: rgba(92, 107, 122, 0.1); color: var(--text2); }
+.tag-yes { background: color-mix(in srgb, var(--lime) 16%, transparent); color: var(--lime-ink); }
+.tag-no { background: color-mix(in srgb, var(--text2) 10%, transparent); color: var(--text2); }
 
 .list-end {
   padding: 1rem 1.25rem;
@@ -480,9 +491,10 @@ button { font: inherit; color: inherit; }
 
 .empty h2 {
   margin: 0 0 0.375rem;
-  font-family: var(--font-display);
-  font-weight: 600;
-  font-size: 1.25rem;
+  font-family: var(--font-display-en);
+  font-weight: 400;
+  font-size: 1.125rem;
+  letter-spacing: 0;
 }
 
 .empty p { margin: 0 0 1rem; font-size: 0.875rem; color: var(--text2); }
@@ -523,6 +535,12 @@ button { font: inherit; color: inherit; }
 .detail-back:hover { color: var(--text); }
 .detail-back .icon { width: 18px; height: 18px; }
 
+/* Thai headers opt back out of Chango, which has no Thai glyphs, and use its
+   Thai counterpart Itim instead (DESIGN.md §3). Store-name headings are not
+   page headers, so they stay on Fredoka — .detail h2 below matches at equal
+   specificity and wins on source order. */
+h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
+
 .detail h2 {
   margin: 0 0 0.25rem;
   font-family: var(--font-display);
@@ -544,7 +562,7 @@ button { font: inherit; color: inherit; }
 }
 .detail-row .icon { width: 20px; height: 20px; color: var(--text2); flex: none; margin-top: 2px; }
 .detail-row a { color: var(--text); text-decoration-color: var(--border-strong); }
-.detail-row a:hover { color: var(--accent); }
+.detail-row a:hover { color: var(--blue-ink); }
 
 .pills { display: flex; flex-wrap: wrap; gap: 0.375rem; margin-top: 0.75rem; }
 
@@ -559,11 +577,48 @@ button { font: inherit; color: inherit; }
 .detail-actions { display: flex; gap: 0.5rem; margin-top: 1.125rem; }
 .detail-actions .btn { flex: 1; }
 
+/* ── LANGUAGE SWITCH ─────────────────────────────────────────────────────── */
+/* Top-right corner, above the zoom controls (DESIGN.md §4). Text-only, no
+   flags: the active segment gets the same fill/ink as a primary button. */
+
+.lang-switch {
+  position: absolute;
+  top: var(--gutter);
+  right: var(--gutter);
+  z-index: 500;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow);
+}
+
+.lang-btn {
+  min-width: 38px;
+  height: 38px;
+  padding: 0 0.625rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: none;
+  color: var(--text2);
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), color 0.15s var(--ease);
+}
+.lang-btn:hover { background: var(--surface-alt); }
+.lang-btn[aria-pressed="true"] { background: var(--accent-deep); color: var(--surface); }
+.lang-btn[aria-pressed="true"]:hover { background: var(--accent-deep); }
+
 /* ── MAP CONTROLS ───────────────────────────────────────────────────────── */
 
 .map-controls {
   position: absolute;
-  top: var(--gutter);
+  top: calc(var(--gutter) + 44px + 0.5rem);
   right: var(--gutter);
   z-index: 500;
   display: grid;
@@ -580,7 +635,7 @@ button { font: inherit; color: inherit; }
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  box-shadow: var(--shadow-ice);
+  box-shadow: var(--shadow);
   transition: background 0.15s var(--ease), transform 0.12s var(--ease);
 }
 .ctl:hover { background: var(--surface-alt); }
@@ -604,7 +659,7 @@ button { font: inherit; color: inherit; }
   object-fit: contain;
   object-position: bottom;
   pointer-events: none;
-  filter: drop-shadow(0 2px 3px rgba(27, 39, 51, 0.35));
+  filter: drop-shadow(0 2px 3px rgba(27, 32, 41, 0.35));
 }
 
 .pin--unconfirmed .pin-cup { filter: grayscale(1) opacity(0.6); }
@@ -613,7 +668,7 @@ button { font: inherit; color: inherit; }
 
 .pin--active { transform: scale(1.22); z-index: 11; }
 .pin--active .pin-cup {
-  filter: drop-shadow(0 0 5px var(--accent)) drop-shadow(0 2px 3px rgba(27, 39, 51, 0.35));
+  filter: drop-shadow(0 0 5px var(--accent)) drop-shadow(0 2px 3px rgba(27, 32, 41, 0.35));
 }
 .pin--active.pin--unconfirmed .pin-cup {
   filter: grayscale(1) drop-shadow(0 0 5px var(--text2));
@@ -641,7 +696,7 @@ button { font: inherit; color: inherit; }
   border-radius: 50%;
   background: var(--accent);
   border: 3px solid var(--surface);
-  box-shadow: 0 2px 6px rgba(27, 39, 51, 0.3);
+  box-shadow: 0 2px 6px rgba(27, 32, 41, 0.3);
 }
 
 .me::after {
@@ -678,7 +733,7 @@ button { font: inherit; color: inherit; }
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: var(--shadow-ice);
+  box-shadow: var(--shadow);
 }
 
 .loader-cup {
@@ -748,7 +803,10 @@ button { font: inherit; color: inherit; }
 
   .search { width: 100%; height: 52px; }
 
-  .map-controls { top: calc(var(--gutter) + 64px); right: var(--gutter); gap: 0.375rem; }
+  .lang-switch { top: calc(var(--gutter) + 64px); right: var(--gutter); }
+  .lang-btn { height: 34px; min-width: 34px; padding: 0 0.5rem; }
+
+  .map-controls { top: calc(var(--gutter) + 64px + 40px + 0.375rem); right: var(--gutter); gap: 0.375rem; }
   .ctl { width: 40px; height: 40px; }
 
   .sidebar {

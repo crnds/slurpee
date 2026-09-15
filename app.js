@@ -18,8 +18,10 @@
   var STORAGE = {
     province: 'slurpee_v1_province',
     confirmed: 'slurpee_v1_confirmedonly',
-    lang: 'slurpee_v1_lang'
+    lang: 'slurpee_v1_lang',
+    sidebarCollapsed: 'slurpee_v1_sidebarcollapsed'
   };
+  var DESKTOP_QUERY = '(min-width: 769px)';
 
   /* UI chrome only — never the data. Branch names, addresses and product
      labels are already authentically Thai (real 7-Eleven directory text) and
@@ -37,6 +39,8 @@
       searchAria: 'Search by branch name, code or address',
       searchClear: 'Clear search',
       grabAria: 'Expand or collapse the panel',
+      sidebarCollapse: 'Collapse panel',
+      sidebarExpand: 'Expand panel',
       province: 'Province',
       allThailand: 'All of Thailand',
       confirmedOnly: 'Confirmed machines only',
@@ -80,6 +84,8 @@
       searchAria: 'ค้นหาด้วยชื่อสาขา รหัส หรือที่อยู่',
       searchClear: 'ล้างการค้นหา',
       grabAria: 'ขยายหรือย่อแผงข้อมูล',
+      sidebarCollapse: 'ย่อแผงข้อมูล',
+      sidebarExpand: 'ขยายแผงข้อมูล',
       province: 'จังหวัด',
       allThailand: 'ทั่วประเทศไทย',
       confirmedOnly: 'เฉพาะเครื่องที่ยืนยันแล้ว',
@@ -779,6 +785,28 @@
     });
   }
 
+  // ── SIDEBAR COLLAPSE (desktop) ───────────────────────────────────────────
+
+  function setSidebarCollapsed(collapsed) {
+    el.sidebar.classList.toggle('is-collapsed', collapsed);
+    el.sidebarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+    el.sidebarToggle.setAttribute('aria-label', t(collapsed ? 'sidebarExpand' : 'sidebarCollapse'));
+    try { localStorage.setItem(STORAGE.sidebarCollapsed, collapsed ? '1' : '0'); } catch (e) { /* private mode */ }
+  }
+
+  function initSidebarCollapse() {
+    if (window.matchMedia(DESKTOP_QUERY).matches) {
+      try {
+        if (localStorage.getItem(STORAGE.sidebarCollapsed) === '1') setSidebarCollapsed(true);
+      } catch (e) { /* private mode */ }
+    }
+
+    el.sidebarToggle.addEventListener('click', function () {
+      if (!window.matchMedia(DESKTOP_QUERY).matches) return;   // mobile uses the grab handle instead
+      setSidebarCollapsed(!el.sidebar.classList.contains('is-collapsed'));
+    });
+  }
+
   // ── FILTER CONTROLS ─────────────────────────────────────────────────────
 
   function buildProvinceSelect() {
@@ -857,6 +885,8 @@
     el.search.setAttribute('aria-label', t('searchAria'));
     el.searchClear.setAttribute('aria-label', t('searchClear'));
     el.grab.setAttribute('aria-label', t('grabAria'));
+    el.sidebarToggle.setAttribute('aria-label',
+      el.sidebar.classList.contains('is-collapsed') ? t('sidebarExpand') : t('sidebarCollapse'));
     el.provinceLabel.textContent = t('province');
     el.confirmedLabel.textContent = t('confirmedOnly');
     if (!el.locateBtn.disabled) el.locateBtn.setAttribute('aria-label', t('findFreeze'));
@@ -970,6 +1000,7 @@
       searchClear: document.getElementById('search-clear'),
       sidebar: document.getElementById('sidebar'),
       sidebarScroll: document.getElementById('sidebar-scroll'),
+      sidebarToggle: document.getElementById('sidebar-toggle'),
       grab: document.getElementById('grab'),
       province: document.getElementById('province'),
       confirmedOnly: document.getElementById('confirmed-only'),
@@ -1038,6 +1069,7 @@
 
         bind();
         initSheet();
+        initSidebarCollapse();
         applyFilters();
         locate(true);
 

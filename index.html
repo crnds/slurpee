@@ -179,100 +179,110 @@
 
 <div class="app">
 
-  <div id="map" role="application" aria-label="Map of Slurpee branches in Thailand"></div>
+  <!-- ── SITE HEADER ──────────────────────────────────────────────────── -->
+  <header class="site-header">
+    <div class="brand">
+      <div class="hero" id="hero">
+        <canvas id="hero-canvas" aria-hidden="true"></canvas>
+        <svg class="icon hero-fallback" aria-hidden="true"><use href="#icon-cup"></use></svg>
+      </div>
+      <h1 id="hero-title"><span id="hero-title-main">Slurpee Map</span><em id="hero-title-sub">Thailand</em></h1>
+    </div>
 
-  <!-- ── SEARCH ───────────────────────────────────────────────────────── -->
-  <div class="top-bar">
-    <search class="search">
-      <svg class="icon search-icon" aria-hidden="true"><use href="#icon-straw"></use></svg>
-      <input id="search-input" type="search" autocomplete="off" spellcheck="false"
-             placeholder="Where&rsquo;s your nearest Slurpee?" aria-label="Search by branch name, code or address">
-      <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">
-        <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
-      </button>
-    </search>
-  </div>
+    <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
+      <button type="button" class="lang-btn" id="lang-en" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" class="lang-btn" id="lang-th" data-lang="th" aria-pressed="false">TH</button>
+    </div>
+  </header>
 
-  <!-- ── SIDEBAR / BOTTOM SHEET ───────────────────────────────────────── -->
-  <aside class="sidebar" id="sidebar" data-snap="half">
-    <button type="button" class="grab" id="grab" aria-label="Expand or collapse the panel"><span></span></button>
+  <div class="stage">
 
-    <div class="sidebar-scroll" id="sidebar-scroll">
-      <header class="sidebar-head">
-        <div class="hero" id="hero">
-          <canvas id="hero-canvas" aria-hidden="true"></canvas>
-          <svg class="icon hero-fallback" aria-hidden="true"><use href="#icon-cup"></use></svg>
-        </div>
-        <div class="sidebar-headings">
-          <h1 id="hero-title"><span id="hero-title-main">Slurpee Map</span><em id="hero-title-sub">Thailand</em></h1>
+    <div id="map" role="application" aria-label="Map of Slurpee branches in Thailand"></div>
+
+    <!-- ── SIDEBAR / BOTTOM SHEET ─────────────────────────────────────── -->
+    <aside class="sidebar" id="sidebar" data-snap="half">
+      <button type="button" class="grab" id="grab" aria-label="Expand or collapse the panel"><span></span></button>
+
+      <search class="search">
+        <svg class="icon search-icon" aria-hidden="true"><use href="#icon-straw"></use></svg>
+        <input id="search-input" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Where&rsquo;s your nearest Slurpee?" aria-label="Search by branch name, code or address">
+        <button type="button" class="search-clear" id="search-clear" hidden aria-label="Clear search">
+          <svg class="icon" aria-hidden="true"><use href="#icon-close"></use></svg>
+        </button>
+      </search>
+
+      <div class="sidebar-scroll" id="sidebar-scroll">
+        <div class="sidebar-stat">
           <p class="tally"><b id="count">&mdash;</b> <span id="count-label">branches</span></p>
         </div>
-      </header>
 
-      <div class="filters">
-        <div class="field">
-          <label class="field-label" for="province" id="province-label">Province</label>
-          <div class="select-wrap">
-            <select id="province"><option value="">All of Thailand</option></select>
-            <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+        <div class="filters">
+          <div class="field">
+            <label class="field-label" for="province" id="province-label">Province</label>
+            <div class="select-wrap">
+              <select id="province"><option value="">All of Thailand</option></select>
+              <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"></use></svg>
+            </div>
           </div>
+
+          <label class="toggle">
+            <input type="checkbox" id="confirmed-only">
+            <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
+            <span class="toggle-text" id="confirmed-label">Confirmed machines only</span>
+          </label>
+
+          <p class="notice notice--info" id="basemap-notice" hidden>
+            <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+            <span id="basemap-notice-text">The map background is served in byte ranges, which this page
+              was not opened over. Run <code>python3 serve.py</code> in the slurpee
+              folder and open <code>localhost:8080</code>, or use the deployed
+              site. Branches and search work either way.</span>
+          </p>
         </div>
 
-        <label class="toggle">
-          <input type="checkbox" id="confirmed-only">
-          <span class="toggle-track" aria-hidden="true"><span class="toggle-thumb"></span></span>
-          <span class="toggle-text" id="confirmed-label">Confirmed machines only</span>
-        </label>
-
-        <p class="notice notice--info" id="basemap-notice" hidden>
-          <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
-          <span id="basemap-notice-text">The map background is served in byte ranges, which this page
-            was not opened over. Run <code>python3 serve.py</code> in the slurpee
-            folder and open <code>localhost:8080</code>, or use the deployed
-            site. Branches and search work either way.</span>
-        </p>
+        <div class="results" id="results"></div>
       </div>
 
-      <div class="results" id="results"></div>
+      <!-- ── STORE DETAIL (slides over the list) ──────────────────────── -->
+      <section class="detail" id="detail" hidden aria-live="polite">
+        <div class="detail-scroll" id="detail-scroll"></div>
+      </section>
+    </aside>
+
+    <!-- ── SIDEBAR COLLAPSE (desktop only) ─────────────────────────────── -->
+    <button type="button" class="sidebar-toggle" id="sidebar-toggle" aria-label="Collapse panel" aria-expanded="true" aria-controls="sidebar">
+      <svg class="icon" aria-hidden="true"><use href="#icon-chevron-left"></use></svg>
+    </button>
+
+    <!-- ── MAP CONTROLS ────────────────────────────────────────────────── -->
+    <div class="map-controls">
+      <button type="button" class="ctl" id="locate-map-btn" aria-label="Find my freeze">
+        <svg class="icon" aria-hidden="true"><use href="#icon-locate"></use></svg>
+      </button>
+      <button type="button" class="ctl" id="zoom-in" aria-label="Zoom in">
+        <svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
+      </button>
+      <button type="button" class="ctl" id="zoom-out" aria-label="Zoom out">
+        <svg class="icon" aria-hidden="true"><use href="#icon-minus"></use></svg>
+      </button>
+      <p class="notice notice--floating" id="geo-error" hidden role="alert">
+        <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
+        <span></span>
+      </p>
     </div>
 
-    <!-- ── STORE DETAIL (slides over the list) ────────────────────────── -->
-    <section class="detail" id="detail" hidden aria-live="polite">
-      <div class="detail-scroll" id="detail-scroll"></div>
-    </section>
-  </aside>
-
-  <!-- ── MAP CONTROLS ─────────────────────────────────────────────────── -->
-  <div class="lang-switch" id="lang-switch" role="group" aria-label="Language">
-    <button type="button" class="lang-btn" id="lang-en" data-lang="en" aria-pressed="true">EN</button>
-    <button type="button" class="lang-btn" id="lang-th" data-lang="th" aria-pressed="false">TH</button>
-  </div>
-
-  <div class="map-controls">
-    <button type="button" class="ctl" id="locate-map-btn" aria-label="Find my freeze">
-      <svg class="icon" aria-hidden="true"><use href="#icon-locate"></use></svg>
-    </button>
-    <button type="button" class="ctl" id="zoom-in" aria-label="Zoom in">
-      <svg class="icon" aria-hidden="true"><use href="#icon-plus"></use></svg>
-    </button>
-    <button type="button" class="ctl" id="zoom-out" aria-label="Zoom out">
-      <svg class="icon" aria-hidden="true"><use href="#icon-minus"></use></svg>
-    </button>
-    <p class="notice notice--floating" id="geo-error" hidden role="alert">
-      <svg class="icon" aria-hidden="true"><use href="#icon-alert"></use></svg>
-      <span></span>
-    </p>
-  </div>
-
-  <!-- ── LOADING ──────────────────────────────────────────────────────── -->
-  <div class="loader" id="loader">
-    <div class="loader-card">
-      <svg class="icon loader-cup" aria-hidden="true"><use href="#icon-cup"></use></svg>
-      <p class="loader-copy" id="loader-copy">Pouring the map&hellip;</p>
-      <div class="shimmer-rows">
-        <span class="shimmer"></span><span class="shimmer"></span><span class="shimmer"></span>
+    <!-- ── LOADING ────────────────────────────────────────────────────── -->
+    <div class="loader" id="loader">
+      <div class="loader-card">
+        <svg class="icon loader-cup" aria-hidden="true"><use href="#icon-cup"></use></svg>
+        <p class="loader-copy" id="loader-copy">Pouring the map&hellip;</p>
+        <div class="shimmer-rows">
+          <span class="shimmer"></span><span class="shimmer"></span><span class="shimmer"></span>
+        </div>
       </div>
     </div>
+
   </div>
 
 </div>

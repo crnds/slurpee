@@ -78,7 +78,6 @@ aware — the API blocks aggressive clients hard.
 | Path | |
 |---|---|
 | `index.html`, `style.css`, `app.js` | the app |
-| `hero.js` | three.js slush cup in the sidebar |
 | `serve.py` | static server with HTTP range support |
 | `fetch_stores.py` | builds `data/stores.js` from `branches.md` |
 | `DESIGN.md` | the visual system |

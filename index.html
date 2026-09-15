@@ -182,9 +182,8 @@
   <!-- ── SITE HEADER ──────────────────────────────────────────────────── -->
   <header class="site-header">
     <div class="brand">
-      <div class="hero" id="hero">
-        <canvas id="hero-canvas" aria-hidden="true"></canvas>
-        <svg class="icon hero-fallback" aria-hidden="true"><use href="#icon-cup"></use></svg>
+      <div class="hero">
+        <img class="hero-img" src="assets/hero.png" alt="" width="48" height="48">
       </div>
       <h1 id="hero-title"><span id="hero-title-main">Slurpee Map</span><em id="hero-title-sub">Thailand</em></h1>
     </div>
@@ -291,34 +290,5 @@
 <script src="vendor/protomaps-leaflet.js"></script>
 <script src="data/stores.js"></script>
 <script src="app.js"></script>
-<script>
-/* The three.js hero is decorative. The 670 KB library and the WebGL context
-   stay off the critical path: they load after window load, at idle, and only
-   when motion is welcome. Without them the #icon-cup sprite stays, which is
-   the designed fallback. */
-(function () {
-  function load(src) {
-    return new Promise(function (resolve, reject) {
-      var s = document.createElement('script');
-      s.src = src;
-      s.onload = resolve;
-      s.onerror = reject;
-      document.body.appendChild(s);
-    });
-  }
-  function go() {
-    if (window.matchMedia &&
-        window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    load('vendor/three.min.js')
-      .then(function () { return load('hero.js'); })
-      .then(function () { if (window.SLURPEE_HERO) window.SLURPEE_HERO(); })
-      .catch(function () { /* sprite fallback stays */ });
-  }
-  window.addEventListener('load', function () {
-    if (window.requestIdleCallback) window.requestIdleCallback(go);
-    else setTimeout(go, 1500);
-  });
-})();
-</script>
 </body>
 </html>

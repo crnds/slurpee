@@ -26,15 +26,12 @@
   /* UI chrome only — never the data. Branch names, addresses and product
      labels are already authentically Thai (real 7-Eleven directory text) and
      stay exactly as they are regardless of this switch; only the interface
-     copy around them changes. The sidebar logotype additionally swaps its
-     font, Chango (`--font-display-en`) for Itim (`--font-display-th`), via
-     the `.th` class — see DESIGN.md §3. */
+     copy around them changes. The "Slurpee Map Thailand" logotype in the
+     header is brand name, not UI copy — it always stays English. */
   var STRINGS = {
     en: {
       title: 'Slurpee Map Thailand — every 7-Eleven serving Slurpee',
       description: 'An interactive OpenStreetMap of every 7-Eleven branch in Thailand that serves Slurpee.',
-      heroMain: 'Slurpee Map',
-      heroSub: 'Thailand',
       searchPlaceholder: 'Where’s your nearest Slurpee?',
       searchAria: 'Search by branch name, code or address',
       searchClear: 'Clear search',
@@ -78,8 +75,6 @@
     th: {
       title: 'แผนที่สลัร์ปี้ ทั่วไทย — 7-Eleven ทุกสาขาที่มีสลัร์ปี้',
       description: 'แผนที่แบบอินเทอร์แอกทีฟของทุกสาขา 7-Eleven ในประเทศไทยที่มีเครื่องสลัร์ปี้',
-      heroMain: 'แผนที่สลัร์ปี้',
-      heroSub: 'ประเทศไทย',
       searchPlaceholder: 'ร้านสลัร์ปี้ใกล้คุณอยู่ไหน?',
       searchAria: 'ค้นหาด้วยชื่อสาขา รหัส หรือที่อยู่',
       searchClear: 'ล้างการค้นหา',
@@ -877,9 +872,7 @@
 
     var isTh = STATE.lang === 'th';
     document.documentElement.lang = STATE.lang;
-    el.heroTitle.classList.toggle('th', isTh);
-    el.heroTitleMain.textContent = t('heroMain');
-    el.heroTitleSub.textContent = t('heroSub');
+    // Brand name stays "Slurpee Map Thailand" in English regardless of language.
 
     el.search.placeholder = t('searchPlaceholder');
     el.search.setAttribute('aria-label', t('searchAria'));
@@ -1017,9 +1010,6 @@
       basemapNoticeText: document.getElementById('basemap-notice-text'),
       loader: document.getElementById('loader'),
       loaderCopy: document.getElementById('loader-copy'),
-      heroTitle: document.getElementById('hero-title'),
-      heroTitleMain: document.getElementById('hero-title-main'),
-      heroTitleSub: document.getElementById('hero-title-sub'),
       provinceLabel: document.getElementById('province-label'),
       confirmedLabel: document.getElementById('confirmed-label'),
       langEn: document.getElementById('lang-en'),

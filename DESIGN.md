@@ -175,10 +175,10 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
 
 - **Spring physics everywhere:** `stiffness: 100, damping: 20` default. Pins pop, sheets slide, buttons compress — everything has weight and bounce, like slush settling in a cup. No linear easing, ever.
 - **Staggered orchestration:** sidebar store lists cascade in with 40ms delays. Never mount a list instantly.
-- **Perpetual micro-life:** the "You are here" dot emits a slow Shock Pink sonar ring; the search bar straw icon does a 6s idle wiggle; the hero cup turns forever. Motion amplitude stays tiny — alive, not distracting.
+- **Perpetual micro-life:** the "You are here" dot emits a slow Shock Pink sonar ring; the search bar straw icon does a 6s idle wiggle. Motion amplitude stays tiny — alive, not distracting.
 - **Product pill hover:** pills do a 2° tilt-and-bounce, like they're jiggling in syrup.
 - **Performance:** animate `transform` and `opacity` only. Never `top/left/width/height`. Map markers animate via transforms on a dedicated layer.
-- **Reduced motion:** honour `prefers-reduced-motion` — springs become 150ms fades, perpetual loops stop, the three.js hero never loads at all.
+- **Reduced motion:** honour `prefers-reduced-motion` — springs become 150ms fades, perpetual loops stop.
 
 ## 7. Anti-Patterns (Banned)
 

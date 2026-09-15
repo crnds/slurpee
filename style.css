@@ -585,7 +585,6 @@ button { font: inherit; color: inherit; }
 }
 .ctl:hover { background: var(--surface-alt); }
 .ctl:active { transform: translateY(-1px); }
-.ctl[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
 
 /* ── PINS ───────────────────────────────────────────────────────────────── */
 

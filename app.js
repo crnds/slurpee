@@ -17,16 +17,15 @@
   var PIN_MIN_ZOOM = 11;       // below this, branches draw as canvas dots
   var STORAGE = {
     province: 'slurpee_v1_province',
-    confirmed: 'slurpee_v1_confirmedonly',
-    layer: 'slurpee_v1_layer'
+    confirmed: 'slurpee_v1_confirmedonly'
   };
 
   var OSM_ATTR = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
-  /* Both basemaps are the same Thailand extract of the Protomaps OpenStreetMap
-     basemap, served from this project's own data/ directory and drawn in two
-     different flavours. No API key, no rate limit, no third party in the
-     request path at all. It is a PMTiles archive read with HTTP range
+  /* The basemap is a Thailand extract of the Protomaps OpenStreetMap
+     basemap, served from this project's own data/ directory. No API key, no
+     rate limit, no third party in the request path at all. It is a PMTiles
+     archive read with HTTP range
      requests, so it needs a server that honours Range: serve.py does,
      `python3 -m http.server` does not, and file:// cannot. GitHub Pages does,
      which is what lets the deployed site use the same file.
@@ -59,10 +58,7 @@
 
   var TILE_ATTR = OSM_ATTR + ' &middot; tiles <a href="https://protomaps.com">Protomaps</a>';
 
-  var TILES = {
-    frost: { flavor: 'white' },   // pale, so the pins carry the colour
-    full:  { flavor: 'light' }    // greens and blues, closer to a paper map
-  };
+  var TILE_FLAVOR = 'white';   // pale, so the pins carry the colour
 
   /* Product categories that earn a Flavor Swirl dot on the pin base.
      DESIGN.md reserves this palette for pins and tags only. */
@@ -90,7 +86,6 @@
     dotRenderer: null,  // shared L.canvas renderer for the dots
     onMap: {},          // code -> layer currently added to STATE.pins
     selected: null,
-    layer: 'frost',
     basemapMissing: false,
     tileLayer: null,
     meMarker: null,
@@ -227,8 +222,7 @@
       .catch(function () { return false; });
   }
 
-  function setTiles(which) {
-    STATE.layer = which;
+  function setTiles() {
     if (STATE.tileLayer) STATE.map.removeLayer(STATE.tileLayer);
     STATE.tileLayer = null;
 
@@ -236,7 +230,6 @@
     // else's tile server, which is what got the map blocked before.
     if (STATE.basemapMissing) {
       el.basemapNotice.hidden = false;
-      el.layerBtn.disabled = true;
       return;
     }
 
@@ -249,7 +242,7 @@
     // would otherwise paint 768px tiles; 2 is plenty for a map under pins.
     STATE.tileLayer = protomapsL.leafletLayer({
       url: PMTILES_URL,
-      flavor: TILES[which].flavor,
+      flavor: TILE_FLAVOR,
       lang: 'th',                       // match the Thai store list
       maxDataZoom: PMTILES_MAXZOOM,
       updateWhenIdle: true,
@@ -261,11 +254,6 @@
 
     STATE.tileLayer.addTo(STATE.map);
     STATE.tileLayer.bringToBack();
-
-    el.layerBtn.setAttribute('aria-pressed', which === 'full' ? 'true' : 'false');
-    el.layerBtn.setAttribute('aria-label',
-      which === 'frost' ? 'Switch to the full-colour map' : 'Switch to the frosted map');
-    try { localStorage.setItem(STORAGE.layer, which); } catch (e) { /* private mode */ }
   }
 
   function pinHtml(s, active) {
@@ -697,8 +685,6 @@
         STATE.confirmedOnly = true;
         el.confirmedOnly.checked = true;
       }
-      var lay = localStorage.getItem(STORAGE.layer);
-      if (lay === 'frost' || lay === 'full') STATE.layer = lay;
     } catch (e) { /* ignore */ }
   }
 
@@ -754,10 +740,6 @@
 
     el.zoomIn.addEventListener('click', function () { STATE.map.zoomIn(); });
     el.zoomOut.addEventListener('click', function () { STATE.map.zoomOut(); });
-    el.layerBtn.addEventListener('click', function () {
-      if (STATE.basemapMissing) return;     // nothing to toggle between
-      setTiles(STATE.layer === 'frost' ? 'full' : 'frost');
-    });
 
     document.addEventListener('keydown', function (e) {
       if (e.key === 'Escape' && !el.detail.hidden) closeDetail();
@@ -799,7 +781,6 @@
       countLabel: document.getElementById('count-label'),
       zoomIn: document.getElementById('zoom-in'),
       zoomOut: document.getElementById('zoom-out'),
-      layerBtn: document.getElementById('layer-btn'),
       basemapNotice: document.getElementById('basemap-notice'),
       loader: document.getElementById('loader')
     };
@@ -809,13 +790,6 @@
       fail('Store data is missing. Run "python3 fetch_stores.py" to build data/stores.js, then reload.');
       return;
     }
-
-    // The saved layer is read before the basemap probe resolves — the probe
-    // can beat the deferred boot below on a fast local server.
-    try {
-      var lay = localStorage.getItem(STORAGE.layer);
-      if (lay === 'frost' || lay === 'full') STATE.layer = lay;
-    } catch (e) { /* private mode */ }
 
     // maxZoom must live on the map, not the layer: the vector basemap is an
     // L.GridLayer that declares no maxZoom, so without this the map would
@@ -832,7 +806,7 @@
     // Probe before choosing a layer so the notice never flashes first.
     probeBasemap().then(function (ok) {
       STATE.basemapMissing = !ok;
-      setTiles(STATE.layer);
+      setTiles();
     });
 
     STATE.pins = L.layerGroup();

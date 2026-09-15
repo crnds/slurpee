@@ -163,17 +163,6 @@
 
   var TILE_FLAVOR = 'white';   // pale, so the pins carry the colour
 
-  /* Product categories that earn a Cup Trio dot on the pin base. Five swatches
-     laddered out of the three brand hues; DESIGN.md §2 reserves them for pins
-     and product pills only. */
-  var DOTS = [
-    ['AC', 'var(--blue-ink)'],     // All Café
-    ['KS', 'var(--accent-deep)'],  // Kudsan
-    ['BS', 'var(--accent)'],       // bakery
-    ['VF', 'var(--lime)'],         // fresh produce
-    ['FP', 'var(--blue)']          // Food Place
-  ];
-
   /* One cup art asset per branch, assigned by hashing the store code so it
      is random-looking across the map but stable for a given branch (no
      colour swap on re-render). assets/cups/cup_<name>.png, sliced from the
@@ -209,7 +198,7 @@
     filtered: [],
     province: '',
     query: '',
-    confirmedOnly: false,
+    confirmedOnly: true,
     lang: 'en',
     userPos: null,
     map: null,
@@ -391,27 +380,18 @@
   }
 
   function pinHtml(s, active) {
-    var dots = '';
-    var n = 0;
-    for (var i = 0; i < DOTS.length && n < 4; i++) {
-      if (s.products.indexOf(DOTS[i][0]) !== -1) {
-        dots += '<i style="background:' + DOTS[i][1] + '"></i>';
-        n++;
-      }
-    }
     return '<div class="pin' + (s.sp ? '' : ' pin--unconfirmed') +
       (active ? ' pin--active' : '') + '">' +
       '<span class="pin-badge" style="border-color:' + CUP_HEX[s.cup] + '">' +
         '<img class="pin-cup" src="assets/cups/cup_' + s.cup + '.png" alt="" />' +
       '</span>' +
-      (dots ? '<span class="pin-dots">' + dots + '</span>' : '') +
       '</div>';
   }
 
   /* Round badge, no pointer tail — anchor is the badge's own centre rather
      than a bottom tip. */
-  var PIN_ICON_SIZE = [34, 34];
-  var PIN_ICON_ANCHOR = [17, 17];
+  var PIN_ICON_SIZE = [48, 48];
+  var PIN_ICON_ANCHOR = [24, 24];
 
   function makeMarker(s) {
     var m = L.marker([s.lat, s.lng], {
@@ -822,10 +802,10 @@
   function resetFilters() {
     STATE.query = '';
     STATE.province = '';
-    STATE.confirmedOnly = false;
+    STATE.confirmedOnly = true;
     el.search.value = '';
     el.province.value = '';
-    el.confirmedOnly.checked = false;
+    el.confirmedOnly.checked = true;
     el.searchClear.hidden = true;
     persist();
     applyFilters();
@@ -846,9 +826,9 @@
         STATE.province = p;
         el.province.value = p;
       }
-      if (localStorage.getItem(STORAGE.confirmed) === '1') {
-        STATE.confirmedOnly = true;
-        el.confirmedOnly.checked = true;
+      if (localStorage.getItem(STORAGE.confirmed) === '0') {
+        STATE.confirmedOnly = false;
+        el.confirmedOnly.checked = false;
       }
     } catch (e) { /* ignore */ }
   }

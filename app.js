@@ -44,7 +44,6 @@
       finding: 'Finding you...',
       zoomIn: 'Zoom in',
       zoomOut: 'Zoom out',
-      loaderCopy: 'Pouring the map…',
       basemapNotice: 'The map background is served in byte ranges, which this page ' +
         'was not opened over. Run <code>python3 serve.py</code> in the slurpee ' +
         'folder and open <code>localhost:8080</code>, or use the deployed ' +
@@ -86,7 +85,6 @@
       finding: 'กำลังค้นหาคุณ...',
       zoomIn: 'ซูมเข้า',
       zoomOut: 'ซูมออก',
-      loaderCopy: 'กำลังเทแผนที่…',
       basemapNotice: 'แผนที่พื้นหลังถูกส่งแบบ byte range ซึ่งหน้านี้ไม่ได้เปิดผ่านวิธีนั้น ' +
         'รันคำสั่ง <code>python3 serve.py</code> ในโฟลเดอร์ slurpee ' +
         'แล้วเปิด <code>localhost:8080</code> หรือใช้เว็บไซต์จริงที่เผยแพร่แล้ว ' +
@@ -265,7 +263,7 @@
     return setTimeout(fn, 30);
   }
 
-  /* Run after the next paint — lets the shell and loader show before heavy work. */
+  /* Run after the next paint — lets the shell show before heavy work. */
   function afterPaint(fn) {
     requestAnimationFrame(function () { setTimeout(fn, 0); });
   }
@@ -1014,7 +1012,6 @@
     if (!el.locateBtn.disabled) el.locateBtn.setAttribute('aria-label', t('findFreeze'));
     el.zoomIn.setAttribute('aria-label', t('zoomIn'));
     el.zoomOut.setAttribute('aria-label', t('zoomOut'));
-    el.loaderCopy.textContent = t('loaderCopy');
     el.basemapNoticeText.innerHTML = t('basemapNotice');
 
     el.langEn.setAttribute('aria-pressed', isTh ? 'false' : 'true');
@@ -1107,12 +1104,18 @@
   // ── BOOT ────────────────────────────────────────────────────────────────
 
   function fail(msg) {
-    var loader = document.getElementById('loader');
-    if (!loader) return;
-    loader.innerHTML = '<div class="loader-card">' +
-      '<svg class="icon loader-cup" aria-hidden="true"><use href="#icon-alert"></use></svg>' +
-      '<p class="loader-copy">' + t('napping') + '</p>' +
+    var box = document.createElement('div');
+    box.setAttribute('role', 'alert');
+    box.style.cssText = 'position:absolute;inset:0;z-index:900;display:grid;place-items:center;' +
+      'background:var(--bg);padding:1.5rem;box-sizing:border-box;';
+    box.innerHTML = '<div style="width:min(300px,80vw);padding:1.75rem;text-align:center;' +
+      'background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius);' +
+      'box-shadow:var(--shadow);">' +
+      '<div style="color:var(--accent);margin:0 auto 0.75rem;width:44px;height:44px;">' + svgIcon('alert') + '</div>' +
+      '<p style="margin:0 0 0.5rem;font-family:var(--font-display);font-weight:500;font-size:1rem;">' +
+      esc(t('napping')) + '</p>' +
       '<p style="margin:0;font-size:.875rem;color:var(--text2)">' + esc(msg) + '</p></div>';
+    document.body.appendChild(box);
   }
 
   function init() {
@@ -1137,8 +1140,6 @@
       zoomOut: document.getElementById('zoom-out'),
       basemapNotice: document.getElementById('basemap-notice'),
       basemapNoticeText: document.getElementById('basemap-notice-text'),
-      loader: document.getElementById('loader'),
-      loaderCopy: document.getElementById('loader-copy'),
       provinceLabel: document.getElementById('province-label'),
       confirmedLabel: document.getElementById('confirmed-label'),
       langEn: document.getElementById('lang-en'),
@@ -1176,8 +1177,8 @@
     STATE.map.addLayer(STATE.pins);
     STATE.map.on('moveend', debounce(renderMarkers, CULL_DEBOUNCE));
 
-    // Stage 2: let the shell and loader paint first, then do the heavy data
-    // pass. Unpacking 2,600 branches and building the first screen in one
+    // Stage 2: let the shell paint first, then do the heavy data pass.
+    // Unpacking 2,600 branches and building the first screen in one
     // synchronous block was the boot long-task on phones.
     afterPaint(function () {
       STATE.all = unpack(raw);
@@ -1190,9 +1191,6 @@
       initSidebarCollapse();
       applyFilters();
       maybeAutoLocate();
-
-      el.loader.classList.add('is-out');
-      setTimeout(function () { el.loader.hidden = true; }, 400);
     });
   }
 

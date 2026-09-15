@@ -117,7 +117,7 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
   - Runs visually heavier than Fredoka at equal size — step the size *down* roughly one notch when converting a heading (the sidebar `h1` went `1.5rem → 1.375rem`).
   - **Latin-only.** It has no Thai glyphs, so it must never be the face for a Thai header. Any header carrying `.th` opts back out to `--font-display-th` — that rule lives in `style.css` and is not optional.
 - **Thai headers:** `Itim` — Chango's Thai counterpart. Same poster job, same single weight (400), same "word on the cup" energy, but with real Thai glyphs. Scoped via the `.th` class on the same headers that would otherwise carry `--font-display-en`: the sidebar logotype when the language switch is set to Thai, and Thai empty-state headlines. Token: `--font-display-th`. Carries Latin glyphs too, so a mixed-script header falls through cleanly rather than tofu-ing.
-- **Thai & mixed body headlines, display accents:** `Fredoka` — the Slurpee voice. Soft, rounded, chunky; looks like it was piped out of the machine. Weights 500–600 only (700 gets blobby). Track slightly tight (`-0.01em`). Still owns the store-name headings (real 7-Eleven branch names, always Thai, never a page header), the search placeholder, the loader copy, and flavour callouts. Token: `--font-display`.
+- **Thai & mixed body headlines, display accents:** `Fredoka` — the Slurpee voice. Soft, rounded, chunky; looks like it was piped out of the machine. Weights 500–600 only (700 gets blobby). Track slightly tight (`-0.01em`). Still owns the store-name headings (real 7-Eleven branch names, always Thai, never a page header), the search placeholder, and flavour callouts. Token: `--font-display`.
 - **Body / UI:** `Outfit` — clean geometric sans that shares Fredoka's roundness without competing. Weight 400 for body, 500 for labels, 600 for button text. Line height 1.6, max 65 characters per line.
 - **Mono / Data:** `Geist Mono` — distances (`1.2 km`), store counts, coordinates, machine status codes. Tabular numerals on. High-density map sidebar data always in mono.
 - **Thai support:** pair `Fredoka`/`Outfit` with `IBM Plex Sans Thai` as the fallback stack. Same weights, generous line height (1.7) — Thai diacritics need the breathing room. Chango sits ahead of Fredoka in `--font-display-en` purely as a per-glyph safety net; if Thai ever lands in an English header, it falls through cleanly rather than tofu-ing.
@@ -156,7 +156,7 @@ Adding a `<link>` to `fonts.googleapis.com` is a regression, not a shortcut.
 
 **Links:** Slush Ink at rest, `--blue-ink` on hover — a link is a fact you're going to go read, so it belongs to blue, not to pink.
 
-**Loaders:** skeletal shimmer shaped exactly like store cards/pins — a slushy shimmer gradient sweeping left-to-right (Frost → Cup White → Frost). No circular spinners anywhere. The loader cup icon is Shock Pink. Map tiles loading: subtle Frost-coloured pulse.
+**Loaders:** no full-screen boot splash — the shell renders immediately and the store list and pins populate in place once the branch data unpacks. No circular spinners anywhere. Map tiles loading: subtle Frost-coloured pulse.
 
 **Empty States:** composed, not text-only. Example — no stores nearby: a Fredoka headline ("Brain freeze drought!"), a line-drawn cup with a 10% blue slush fill, a pink straw, and three trio-coloured bubbles, then one pink CTA ("Widen the search"). Always give the user a next action.
 

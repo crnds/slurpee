@@ -803,66 +803,6 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   100% { transform: scale(3.2); opacity: 0; }
 }
 
-/* ── LOADER ─────────────────────────────────────────────────────────────── */
-
-.loader {
-  position: absolute;
-  inset: 0;
-  z-index: 900;
-  display: grid;
-  place-items: center;
-  background: var(--bg);
-  transition: opacity 0.35s var(--ease);
-}
-.loader.is-out { opacity: 0; pointer-events: none; }
-
-.loader-card {
-  width: min(300px, 80vw);
-  padding: 1.75rem;
-  text-align: center;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.loader-cup {
-  width: 44px;
-  height: 44px;
-  margin: 0 auto 0.75rem;
-  color: var(--accent);
-  animation: bob 2.2s var(--ease) infinite;
-}
-
-@keyframes bob {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-5px); }
-}
-
-.loader-copy {
-  margin: 0 0 1.125rem;
-  font-family: var(--font-display);
-  font-weight: 500;
-  font-size: 1rem;
-}
-
-.shimmer-rows { display: grid; gap: 0.5rem; }
-
-.shimmer {
-  height: 12px;
-  border-radius: var(--radius-pill);
-  background: linear-gradient(90deg, var(--surface-alt) 0%, var(--surface) 50%, var(--surface-alt) 100%);
-  background-size: 200% 100%;
-  animation: shimmer 1.4s linear infinite;
-}
-.shimmer:nth-child(2) { width: 80%; }
-.shimmer:nth-child(3) { width: 60%; }
-
-@keyframes shimmer {
-  from { background-position: 200% 0; }
-  to { background-position: -200% 0; }
-}
-
 /* ── LEAFLET OVERRIDES ──────────────────────────────────────────────────── */
 
 .leaflet-container { font-family: var(--font-body); background: var(--bg); }
@@ -944,7 +884,7 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
   /* Phones: drop the perpetual idle loops — the map and sheet gestures need
      every frame. The sonar on the "me" dot stays: it only exists after the
      user explicitly locates themselves. */
-  .search-icon, .loader-cup { animation: none; }
+  .search-icon { animation: none; }
 }
 
 @media (max-width: 480px) {

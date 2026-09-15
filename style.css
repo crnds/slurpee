@@ -826,6 +826,14 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
 
 .leaflet-container { font-family: var(--font-body); background: var(--bg); }
 
+/* leaflet.css ships .leaflet-top/.leaflet-bottom at z-index:1000 — since #map
+   has no z-index of its own it never isolates a stacking context, so that
+   1000 competed directly against .sidebar's 600 and won. On mobile, where
+   the sheet is full-width, that let the bottom-right attribution control
+   render on top of the sheet's Directions button instead of behind it. Drop
+   it below .sidebar/.sidebar-toggle so app UI always wins over map chrome. */
+.leaflet-top, .leaflet-bottom { z-index: 550; }
+
 .leaflet-control-attribution {
   background: rgba(255, 255, 255, 0.88) !important;
   border-radius: var(--radius-pill) 0 0 0;

@@ -347,7 +347,7 @@ button { font: inherit; color: inherit; }
   border-radius: var(--radius-sm);
   background: var(--surface);
   font-family: var(--font-body);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   color: var(--text);
   cursor: pointer;
   transition: border-color 0.15s var(--ease);
@@ -996,7 +996,6 @@ h1.th, h2.th, h3.th { font-family: var(--font-display-th); }
 }
 
 @media (max-width: 480px) {
-  .search input { font-size: 0.9375rem; }
   .sidebar { --sheet-h: 76dvh; }
 }
 
